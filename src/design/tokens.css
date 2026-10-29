@@ -1,0 +1,162 @@
+/* Tembrio «Резонанс» palette.
+ *
+ * The rule the whole design rests on: at rest the app is warm paper and ink;
+ * the sound gradient (--tb-s1 → --tb-s3) appears only where a voice is playing
+ * right now, and coral (--tb-rec) only while the microphone records. Buttons,
+ * tabs and switches are always ink.
+ *
+ * Every themed value is defined once as a light/dark pair; the active tokens
+ * reference the pair, and the `data-theme` / `prefers-color-scheme` overrides
+ * swap which half is used — the same scheme as src/styles/theme.css.
+ */
+
+:root {
+  --tb-light-paper: #fbf8f3;
+  --tb-light-surface: #ffffff;
+  --tb-light-surface-2: #f5f1ea;
+  --tb-light-surface-3: #ede7dd;
+  --tb-light-edge: #e7e0d5;
+  --tb-light-edge-strong: #d6cec0;
+  --tb-light-ink: #1f1b2d;
+  --tb-light-ink-soft: #5d586b;
+  --tb-light-ink-faint: #8c8696;
+  --tb-light-on-ink: #ffffff;
+  --tb-light-s1: #7c6cff;
+  --tb-light-s2: #c36be0;
+  --tb-light-s3: #ff8a6b;
+  --tb-light-rec: #ee5a3a;
+  --tb-light-rec-wash: #ffe7df;
+  --tb-light-ok: #17785a;
+  --tb-light-ok-wash: #e2f3ea;
+  --tb-light-warn: #a35607;
+  --tb-light-warn-wash: #fff0dc;
+  --tb-light-err: #c2304a;
+  --tb-light-err-wash: #ffe8ec;
+  --tb-light-sel: #cfe0ff;
+  --tb-light-knob-on: #ffffff;
+  --tb-light-shadow:
+    0 30px 70px -34px rgb(45 32 20 / 0.55), 0 2px 6px rgb(45 32 20 / 0.08);
+
+  --tb-dark-paper: #16141c;
+  --tb-dark-surface: #1e1b26;
+  --tb-dark-surface-2: #25222f;
+  --tb-dark-surface-3: #2e2a39;
+  --tb-dark-edge: #322e3d;
+  --tb-dark-edge-strong: #463f55;
+  --tb-dark-ink: #f2eee7;
+  --tb-dark-ink-soft: #b9b3c4;
+  --tb-dark-ink-faint: #8a8497;
+  --tb-dark-on-ink: #16141c;
+  --tb-dark-s1: #9a8cff;
+  --tb-dark-s2: #d58af0;
+  --tb-dark-s3: #ff9c80;
+  --tb-dark-rec: #ff7a5c;
+  --tb-dark-rec-wash: #3b221c;
+  --tb-dark-ok: #62d3a8;
+  --tb-dark-ok-wash: #163a2f;
+  --tb-dark-warn: #f2b25c;
+  --tb-dark-warn-wash: #3a2a16;
+  --tb-dark-err: #ff8a9c;
+  --tb-dark-err-wash: #3c1e26;
+  --tb-dark-sel: #2f4c86;
+  --tb-dark-knob-on: #16141c;
+  --tb-dark-shadow:
+    0 30px 70px -30px rgb(0 0 0 / 0.8), 0 2px 6px rgb(0 0 0 / 0.3);
+
+  --tb-font:
+    "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont,
+    system-ui, sans-serif;
+  --tb-mono: "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  /* The pill is dark in both themes: it floats over any app. */
+  --tb-pill: #15131c;
+  --tb-pill-ink: #f2eee7;
+  --tb-pill-ink-faint: #a9a3b5;
+
+  --tb-paper: var(--tb-light-paper);
+  --tb-surface: var(--tb-light-surface);
+  --tb-surface-2: var(--tb-light-surface-2);
+  --tb-surface-3: var(--tb-light-surface-3);
+  --tb-edge: var(--tb-light-edge);
+  --tb-edge-strong: var(--tb-light-edge-strong);
+  --tb-ink: var(--tb-light-ink);
+  --tb-ink-soft: var(--tb-light-ink-soft);
+  --tb-ink-faint: var(--tb-light-ink-faint);
+  --tb-on-ink: var(--tb-light-on-ink);
+  --tb-s1: var(--tb-light-s1);
+  --tb-s2: var(--tb-light-s2);
+  --tb-s3: var(--tb-light-s3);
+  --tb-rec: var(--tb-light-rec);
+  --tb-rec-wash: var(--tb-light-rec-wash);
+  --tb-ok: var(--tb-light-ok);
+  --tb-ok-wash: var(--tb-light-ok-wash);
+  --tb-warn: var(--tb-light-warn);
+  --tb-warn-wash: var(--tb-light-warn-wash);
+  --tb-err: var(--tb-light-err);
+  --tb-err-wash: var(--tb-light-err-wash);
+  --tb-sel: var(--tb-light-sel);
+  --tb-knob-on: var(--tb-light-knob-on);
+  --tb-shadow: var(--tb-light-shadow);
+  --tb-sound: linear-gradient(
+    90deg,
+    var(--tb-s1),
+    var(--tb-s2) 55%,
+    var(--tb-s3)
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --tb-paper: var(--tb-dark-paper);
+    --tb-surface: var(--tb-dark-surface);
+    --tb-surface-2: var(--tb-dark-surface-2);
+    --tb-surface-3: var(--tb-dark-surface-3);
+    --tb-edge: var(--tb-dark-edge);
+    --tb-edge-strong: var(--tb-dark-edge-strong);
+    --tb-ink: var(--tb-dark-ink);
+    --tb-ink-soft: var(--tb-dark-ink-soft);
+    --tb-ink-faint: var(--tb-dark-ink-faint);
+    --tb-on-ink: var(--tb-dark-on-ink);
+    --tb-s1: var(--tb-dark-s1);
+    --tb-s2: var(--tb-dark-s2);
+    --tb-s3: var(--tb-dark-s3);
+    --tb-rec: var(--tb-dark-rec);
+    --tb-rec-wash: var(--tb-dark-rec-wash);
+    --tb-ok: var(--tb-dark-ok);
+    --tb-ok-wash: var(--tb-dark-ok-wash);
+    --tb-warn: var(--tb-dark-warn);
+    --tb-warn-wash: var(--tb-dark-warn-wash);
+    --tb-err: var(--tb-dark-err);
+    --tb-err-wash: var(--tb-dark-err-wash);
+    --tb-sel: var(--tb-dark-sel);
+    --tb-knob-on: var(--tb-dark-knob-on);
+    --tb-shadow: var(--tb-dark-shadow);
+  }
+}
+
+:root[data-theme="dark"] {
+  --tb-paper: var(--tb-dark-paper);
+  --tb-surface: var(--tb-dark-surface);
+  --tb-surface-2: var(--tb-dark-surface-2);
+  --tb-surface-3: var(--tb-dark-surface-3);
+  --tb-edge: var(--tb-dark-edge);
+  --tb-edge-strong: var(--tb-dark-edge-strong);
+  --tb-ink: var(--tb-dark-ink);
+  --tb-ink-soft: var(--tb-dark-ink-soft);
+  --tb-ink-faint: var(--tb-dark-ink-faint);
+  --tb-on-ink: var(--tb-dark-on-ink);
+  --tb-s1: var(--tb-dark-s1);
+  --tb-s2: var(--tb-dark-s2);
+  --tb-s3: var(--tb-dark-s3);
+  --tb-rec: var(--tb-dark-rec);
+  --tb-rec-wash: var(--tb-dark-rec-wash);
+  --tb-ok: var(--tb-dark-ok);
+  --tb-ok-wash: var(--tb-dark-ok-wash);
+  --tb-warn: var(--tb-dark-warn);
+  --tb-warn-wash: var(--tb-dark-warn-wash);
+  --tb-err: var(--tb-dark-err);
+  --tb-err-wash: var(--tb-dark-err-wash);
+  --tb-sel: var(--tb-dark-sel);
+  --tb-knob-on: var(--tb-dark-knob-on);
+  --tb-shadow: var(--tb-dark-shadow);
+}
