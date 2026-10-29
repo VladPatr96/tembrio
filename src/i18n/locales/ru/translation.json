@@ -995,7 +995,20 @@
   "overlay": {
     "transcribing": "Расшифровка...",
     "processing": "Обработка...",
-    "loadingModel": "Загрузка модели..."
+    "loadingModel": "Загрузка модели...",
+    "speech": {
+      "preparing": "Готовлю речь…",
+      "errors": {
+        "noKey": "Нет ключа OpenRouter",
+        "badKey": "Неверный ключ OpenRouter",
+        "noCredits": "На OpenRouter нет денег",
+        "network": "Нет связи с OpenRouter",
+        "rejected": "Модель не смогла озвучить",
+        "playback": "Не удалось включить звук",
+        "nothingSelected": "Сначала выделите текст",
+        "copyFailed": "Не удалось взять выделенное"
+      }
+    }
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} может блокировать 1 сочетание клавиш",
