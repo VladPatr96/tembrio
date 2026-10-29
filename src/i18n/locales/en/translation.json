@@ -16,7 +16,8 @@
     "postProcessing": "Post Process",
     "history": "History",
     "debug": "Debug",
-    "about": "About"
+    "about": "About",
+    "tts": "Speech"
   },
   "onboarding": {
     "customModelDescription": "Not officially supported",
@@ -898,6 +899,38 @@
           "description": "High-performance tensor library for on-device machine learning inference",
           "details": "Handy's local speech-to-text is built on transcribe.cpp and ggml. Thanks to the amazing work by Georgi Gerganov and contributors."
         }
+      }
+    },
+    "tts": {
+      "title": "Speak Selection",
+      "description": "Select text in any app and press the shortcut to hear it.",
+      "loading": "Loading models…",
+      "refresh": "Reload the model list",
+      "free": "free",
+      "model": {
+        "title": "Voice Model",
+        "description": "OpenRouter speech model. Price is per 1000 characters.",
+        "placeholder": "Choose a model"
+      },
+      "voice": {
+        "title": "Voice",
+        "description": "Voices of the selected model.",
+        "placeholder": "No voices"
+      },
+      "test": {
+        "title": "Try It",
+        "description": "Reads a sample phrase with the chosen model and voice.",
+        "button": "Test voice",
+        "stop": "Stop"
+      },
+      "key": {
+        "title": "Key",
+        "description": "Speech uses OpenRouter. The same key serves post-processing.",
+        "placeholder": "sk-or-…"
+      },
+      "errors": {
+        "models": "Could not load models: {{message}}",
+        "test": "Could not read the phrase: {{message}}"
       }
     }
   },

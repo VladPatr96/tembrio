@@ -6,16 +6,20 @@
 //! sample rate in the Content-Type (`audio/pcm;rate=24000;channels=1`), so no
 //! decoder and no per-model format table are needed.
 
-use crate::settings::get_settings;
-use log::{error, info, warn};
+use crate::settings::{get_settings, write_settings};
+use log::{error, info};
 use rodio::buffer::SamplesBuffer;
 use rodio::Player;
+use serde::Serialize;
+use specta::Type;
 use std::num::NonZero;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::AppHandle;
 
 const SPEECH_URL: &str = "https://openrouter.ai/api/v1/audio/speech";
+const MODELS_URL: &str = "https://openrouter.ai/api/v1/models?output_modalities=speech";
+const SAMPLE_TEXT: &str = "Проверка голоса. Так Tembrio будет читать выделенный текст.";
 
 /// The player of the phrase being read, kept so a second press can stop it.
 static CURRENT: Mutex<Option<Arc<Player>>> = Mutex::new(None);
@@ -65,38 +69,126 @@ pub fn speak_selection(app: &AppHandle) {
             info!("tts: nothing selected");
             return;
         };
-        let settings = get_settings(&app);
-        let api_key = settings
-            .post_process_api_keys
-            .get("openrouter")
-            .filter(|key| !key.is_empty())
-            .cloned()
-            .or_else(|| std::env::var("OPENROUTER_API_KEY").ok());
-        let Some(api_key) = api_key else {
-            warn!("tts: no OpenRouter key (Post-processing → OpenRouter, or OPENROUTER_API_KEY)");
-            return;
-        };
-        info!(
-            "tts: {} chars, model {}, voice {}",
-            text.chars().count(),
-            settings.tts_model,
-            settings.tts_voice
-        );
-        let result = tauri::async_runtime::block_on(synthesize(
-            &api_key,
-            &settings.tts_model,
-            &settings.tts_voice,
-            &text,
-        ));
-        match result {
-            Ok(speech) => {
-                if let Err(e) = play(speech, settings.selected_output_device.clone()) {
-                    error!("tts: playback failed: {e}");
-                }
-            }
-            Err(e) => error!("tts: {e}"),
+        if let Err(e) = tauri::async_runtime::block_on(speak_text(&app, &text)) {
+            error!("tts: {e}");
         }
     });
+}
+
+/// The OpenRouter key: the one saved for post-processing, else OPENROUTER_API_KEY.
+fn openrouter_key(app: &AppHandle) -> Result<String, String> {
+    get_settings(app)
+        .post_process_api_keys
+        .get("openrouter")
+        .filter(|key| !key.is_empty())
+        .cloned()
+        .or_else(|| std::env::var("OPENROUTER_API_KEY").ok().filter(|k| !k.is_empty()))
+        .ok_or_else(|| "OpenRouter key is not set".to_string())
+}
+
+/// Synthesizes `text` with the configured model and voice, then plays it to the end.
+async fn speak_text(app: &AppHandle, text: &str) -> Result<(), String> {
+    let api_key = openrouter_key(app)?;
+    let settings = get_settings(app);
+    info!(
+        "tts: {} chars, model {}, voice {}",
+        text.chars().count(),
+        settings.tts_model,
+        settings.tts_voice
+    );
+    let speech = synthesize(&api_key, &settings.tts_model, &settings.tts_voice, text).await?;
+    let output_device = settings.selected_output_device.clone();
+    tauri::async_runtime::spawn_blocking(move || play(speech, output_device))
+        .await
+        .map_err(|e| format!("playback thread failed: {e}"))?
+}
+
+/// A speech model as shown in the settings window.
+#[derive(Serialize, Type, Clone, Debug)]
+pub struct TtsModel {
+    pub id: String,
+    pub name: String,
+    pub voices: Vec<String>,
+    /// USD per 1000 characters; 0 for free models.
+    pub price_per_1k_chars: f64,
+}
+
+/// OpenRouter speech models, cheapest first.
+#[tauri::command]
+#[specta::specta]
+pub async fn fetch_tts_models() -> Result<Vec<TtsModel>, String> {
+    let json: serde_json::Value = reqwest::Client::new()
+        .get(MODELS_URL)
+        .timeout(Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| format!("request failed: {e}"))?
+        .json()
+        .await
+        .map_err(|e| format!("bad response: {e}"))?;
+    let mut models: Vec<TtsModel> = json["data"]
+        .as_array()
+        .ok_or("no model list in the response")?
+        .iter()
+        .filter_map(|m| {
+            Some(TtsModel {
+                id: m["id"].as_str()?.to_string(),
+                name: m["name"].as_str().unwrap_or_default().to_string(),
+                voices: m["supported_voices"]
+                    .as_array()
+                    .map(|v| v.iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+                    .unwrap_or_default(),
+                // `prompt` is the price of one input character.
+                price_per_1k_chars: m["pricing"]["prompt"]
+                    .as_str()
+                    .and_then(|p| p.parse::<f64>().ok())
+                    .unwrap_or(0.0)
+                    * 1000.0,
+            })
+        })
+        .collect();
+    models.sort_by(|a, b| {
+        a.price_per_1k_chars
+            .total_cmp(&b.price_per_1k_chars)
+            .then_with(|| a.name.cmp(&b.name))
+    });
+    Ok(models)
+}
+
+/// Switches the speech model; `voice` is the voice to use with it (models have
+/// different voice sets, so both change together).
+#[tauri::command]
+#[specta::specta]
+pub fn change_tts_model_setting(app: AppHandle, model: String, voice: String) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.tts_model = model;
+    settings.tts_voice = voice;
+    write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_tts_voice_setting(app: AppHandle, voice: String) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.tts_voice = voice;
+    write_settings(&app, settings);
+    Ok(())
+}
+
+/// Reads a sample phrase with the current model and voice; the error, if any,
+/// goes back to the settings window.
+#[tauri::command]
+#[specta::specta]
+pub async fn test_tts_voice(app: AppHandle) -> Result<(), String> {
+    stop_speaking();
+    speak_text(&app, SAMPLE_TEXT).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn stop_tts() {
+    stop_speaking();
 }
 
 /// Reads `rate` and `channels` from `audio/pcm;rate=24000;channels=1`.
