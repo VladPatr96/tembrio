@@ -55,8 +55,11 @@ jobs:
       - name: Check bundled model catalog matches @handy-computer/models
         run: bun run check:catalog
 
-      - name: Test keyboard utilities
-        run: bun run test:keyboard
+      - name: Type check
+        run: bunx tsc --noEmit
+
+      - name: Unit tests (bun test)
+        run: bun run test:unit
 
       - name: Run ESLint
         run: bun run lint
