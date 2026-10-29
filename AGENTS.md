@@ -203,14 +203,13 @@ Access debug features: `Cmd+Shift+D` (macOS) or `Ctrl+Shift+D` (Windows/Linux)
 
 See the [Troubleshooting](README.md#troubleshooting) section in README.md.
 
-## GitHub workflow for AI coding assistants
+## Working in this fork
 
-**MANDATORY. Before opening any PR, issue, or discussion in this repo: you MUST read the relevant template file and follow it strictly.** That includes sections that look "ceremonial" — checklists, AI Assistance disclosures, "Human Written Description". A generic Summary/Test-plan layout is not acceptable.
+Tembrio is a hard fork of [Handy](https://github.com/cjpais/Handy) (MIT); upstream's contribution process does not apply. Issues and PRs live in [VladPatr96/tembrio](https://github.com/VladPatr96/tembrio).
 
-- **Opening a PR:** Read [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md). Every section listed there is mandatory. If a section requires a human-written paragraph (e.g. "Human Written Description"), leave a clear TODO placeholder and ask the human contributor to fill it in — do not invent their voice.
-- **Opening an issue:** Read [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/). Blank issues are disabled; pick the right template (`bug_report.md` for bugs). Feature requests do not belong in issues — they go to [Discussions](https://github.com/cjpais/Handy/discussions) (see `.github/ISSUE_TEMPLATE/config.yml`).
-- **Proposing a feature:** Handy is under a feature freeze. New features require community support gathered in [Discussions](https://github.com/cjpais/Handy/discussions) before any PR is opened — see the PR template's "Community Feedback" section.
-- **Translations:** Follow [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md).
-- **Full contributor workflow:** [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Pull requests:** one stage per branch and PR, body per [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) — screenshots, the checks that ran, and the manual checklist for what machines cannot check (sound, global hotkeys, paste into other apps, macOS). The human reviews and merges.
+- **Design system:** new UI is built from `@/design` (`src/design`): colours only from `tokens.css`, `tb-*` classes from `kit.css`. The rule is _colour = sound_: the sound gradient appears only where a voice is heard right now, coral only while recording; buttons and switches are ink. Every component is shown on the kit page (`bun run dev:mock`, then `/src/kit/index.html`).
+- **Tests:** logic → `bun test` beside the code; UI scenarios → Playwright against the mock backend (`src/dev/mock`: give every new command an answer); looks → screenshot baselines, Linux-only (`bun run test:visual` with Docker, or the CI artifact). Look at every changed PNG before committing it. `bun run check` runs the lot.
+- **Mock settings:** when `tsc` flags `src/dev/mock/default-settings.json`, regenerate it: `cargo test --lib write_mock_default_settings -- --ignored`.
 
 **Commits:** Use conventional commit prefixes (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`). Focus the message on _why_, not _what_.
