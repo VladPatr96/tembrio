@@ -1,13 +1,21 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "path";
 
 const host = process.env.TAURI_DEV_HOST;
 
+// `vite --mode mock`: start from the browser mock backend instead of Tauri
+// (src/dev/mock). Production builds never see this.
+const mockEntry = (): Plugin => ({
+  name: "tembrio-mock-entry",
+  transformIndexHtml: (html) =>
+    html.replace("/src/main.tsx", "/src/dev/mock/entry.ts"),
+});
+
 // https://vitejs.dev/config/
-export default defineConfig(async () => ({
-  plugins: [react(), tailwindcss()],
+export default defineConfig(async ({ mode }) => ({
+  plugins: [react(), tailwindcss(), ...(mode === "mock" ? [mockEntry()] : [])],
 
   // Path aliases
   resolve: {
@@ -15,6 +23,18 @@ export default defineConfig(async () => ({
       "@": resolve(__dirname, "./src"),
       "@/bindings": resolve(__dirname, "./src/bindings.ts"),
     },
+  },
+
+  // Pre-bundle dependencies of the dev-only pages too (design kit, mock
+  // backend). Otherwise Vite finds them on first visit and reloads the page
+  // mid-test.
+  optimizeDeps: {
+    entries: [
+      "index.html",
+      "src/overlay/index.html",
+      "src/kit/index.html",
+      "src/dev/mock/entry.ts",
+    ],
   },
 
   // Multiple entry points: the main app and the overlay
