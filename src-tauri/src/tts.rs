@@ -14,8 +14,8 @@ use rodio::buffer::SamplesBuffer;
 use rodio::Player;
 use serde::Serialize;
 use specta::Type;
-use std::num::NonZero;
 use std::fmt;
+use std::num::NonZero;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -175,7 +175,11 @@ fn openrouter_key(app: &AppHandle) -> Result<String, SpeechError> {
         .get("openrouter")
         .filter(|key| !key.is_empty())
         .cloned()
-        .or_else(|| std::env::var("OPENROUTER_API_KEY").ok().filter(|k| !k.is_empty()))
+        .or_else(|| {
+            std::env::var("OPENROUTER_API_KEY")
+                .ok()
+                .filter(|k| !k.is_empty())
+        })
         .ok_or(SpeechError::NoKey)
 }
 
@@ -261,7 +265,11 @@ pub async fn fetch_tts_models() -> Result<Vec<TtsModel>, String> {
                 name: m["name"].as_str().unwrap_or_default().to_string(),
                 voices: m["supported_voices"]
                     .as_array()
-                    .map(|v| v.iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+                    .map(|v| {
+                        v.iter()
+                            .filter_map(|x| x.as_str().map(str::to_string))
+                            .collect()
+                    })
                     .unwrap_or_default(),
                 // `prompt` is the price of one input character.
                 price_per_1k_chars: m["pricing"]["prompt"]
@@ -284,7 +292,11 @@ pub async fn fetch_tts_models() -> Result<Vec<TtsModel>, String> {
 /// different voice sets, so both change together).
 #[tauri::command]
 #[specta::specta]
-pub fn change_tts_model_setting(app: AppHandle, model: String, voice: String) -> Result<(), String> {
+pub fn change_tts_model_setting(
+    app: AppHandle,
+    model: String,
+    voice: String,
+) -> Result<(), String> {
     let mut settings = get_settings(&app);
     settings.tts_model = model;
     settings.tts_voice = voice;
@@ -307,7 +319,9 @@ pub fn change_tts_voice_setting(app: AppHandle, voice: String) -> Result<(), Str
 #[specta::specta]
 pub async fn test_tts_voice(app: AppHandle) -> Result<(), String> {
     stop_speaking();
-    speak_text(&app, SAMPLE_TEXT).await.map_err(|e| e.to_string())
+    speak_text(&app, SAMPLE_TEXT)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -419,13 +433,16 @@ fn play(speech: Speech, output_device: Option<String>, id: u64) -> Result<(), Sp
 #[cfg(test)]
 mod tests {
     use super::{
-        begin_session, end_session, is_current, parse_pcm_format, pcm16_to_samples,
-        stop_speaking, SpeechError,
+        begin_session, end_session, is_current, parse_pcm_format, pcm16_to_samples, stop_speaking,
+        SpeechError,
     };
 
     #[test]
     fn errors_map_to_short_pill_messages() {
-        let http = |status| SpeechError::Http { status, message: String::new() };
+        let http = |status| SpeechError::Http {
+            status,
+            message: String::new(),
+        };
         assert_eq!(SpeechError::NoKey.overlay_key(), "noKey");
         assert_eq!(http(401).overlay_key(), "badKey");
         assert_eq!(http(402).overlay_key(), "noCredits");
@@ -450,8 +467,14 @@ mod tests {
 
     #[test]
     fn reads_rate_and_channels_from_content_type() {
-        assert_eq!(parse_pcm_format("audio/pcm;rate=44100;channels=1"), (44_100, 1));
-        assert_eq!(parse_pcm_format("audio/pcm; rate=24000; channels=2"), (24_000, 2));
+        assert_eq!(
+            parse_pcm_format("audio/pcm;rate=44100;channels=1"),
+            (44_100, 1)
+        );
+        assert_eq!(
+            parse_pcm_format("audio/pcm; rate=24000; channels=2"),
+            (24_000, 2)
+        );
         assert_eq!(parse_pcm_format("audio/pcm"), (24_000, 1));
         assert_eq!(parse_pcm_format("audio/pcm;rate=abc"), (24_000, 1));
     }
@@ -469,7 +492,10 @@ mod tests {
         ))
         .expect("speech");
         let seconds = speech.samples.len() as f32 / speech.rate as f32 / speech.channels as f32;
-        println!("rate {} channels {} seconds {seconds:.2}", speech.rate, speech.channels);
+        println!(
+            "rate {} channels {} seconds {seconds:.2}",
+            speech.rate, speech.channels
+        );
         assert!(seconds > 0.5);
     }
 

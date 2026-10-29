@@ -713,7 +713,11 @@ struct OverlayMessage<'a> {
 /// Shows a short message in the pill for a few seconds. `key` is a translation
 /// key under `overlay.speech.errors`; `detail` is shown on hover.
 pub fn show_overlay_message(app_handle: &AppHandle, key: &str, detail: &str) {
-    let _ = app_handle.emit_to("recording_overlay", "overlay-message", OverlayMessage { key, detail });
+    let _ = app_handle.emit_to(
+        "recording_overlay",
+        "overlay-message",
+        OverlayMessage { key, detail },
+    );
     let generation = show_speech_overlay(app_handle, "message");
     let handle = app_handle.clone();
     std::thread::spawn(move || {
