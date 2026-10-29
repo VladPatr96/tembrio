@@ -334,6 +334,10 @@
         "notFound": "Shortcut not found",
         "pressKeys": "Press keys...",
         "bindings": {
+          "speak_selection": {
+            "name": "Speak Selection",
+            "description": "Reads the selected text aloud in any app. Press again to stop."
+          },
           "transcribe": {
             "name": "Transcribe Shortcut",
             "description": "The keyboard shortcut to record and transcribe your voice."

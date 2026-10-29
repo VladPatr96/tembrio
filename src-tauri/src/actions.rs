@@ -938,6 +938,29 @@ impl ShortcutAction for CancelAction {
     }
 }
 
+// Speak Selection Action: press while reading stops it; otherwise the
+// selection is copied on release, when the hotkey's modifiers are let go.
+struct SpeakSelectionAction {
+    stopped_on_press: std::sync::atomic::AtomicBool,
+}
+
+impl ShortcutAction for SpeakSelectionAction {
+    fn start(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        let stopped = crate::tts::stop_speaking();
+        self.stopped_on_press
+            .store(stopped, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    fn stop(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        if !self
+            .stopped_on_press
+            .swap(false, std::sync::atomic::Ordering::SeqCst)
+        {
+            crate::tts::speak_selection(app);
+        }
+    }
+}
+
 // Test Action
 struct TestAction;
 
@@ -977,6 +1000,12 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "cancel".to_string(),
         Arc::new(CancelAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "speak_selection".to_string(),
+        Arc::new(SpeakSelectionAction {
+            stopped_on_press: std::sync::atomic::AtomicBool::new(false),
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "test".to_string(),

@@ -137,6 +137,70 @@ fn paste_via_clipboard(
     })
 }
 
+/// Waits (up to a second) until Ctrl, Alt, Shift and Win are physically up, so a
+/// synthetic Ctrl+C is not read as Ctrl+Alt+C while the user still holds the hotkey.
+#[cfg(target_os = "windows")]
+fn wait_for_modifiers_release() {
+    use windows::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
+    const MODIFIERS: [i32; 5] = [0x10, 0x11, 0x12, 0x5B, 0x5C]; // Shift, Ctrl, Alt, LWin, RWin
+    for _ in 0..50 {
+        // SAFETY: GetAsyncKeyState only reads global keyboard state.
+        let held = MODIFIERS
+            .iter()
+            .any(|&vk| unsafe { GetAsyncKeyState(vk) } as u16 & 0x8000 != 0);
+        if !held {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn wait_for_modifiers_release() {
+    // The action runs on hotkey release; give the modifiers a moment to follow.
+    std::thread::sleep(Duration::from_millis(150));
+}
+
+/// Copies the focused application's selection with Ctrl+C / Cmd+C and restores
+/// the clipboard afterwards. Returns `(selection, clipboard_before)`; selection is
+/// None when nothing was selected (the clipboard did not change).
+pub fn copy_selection(app_handle: &AppHandle) -> Result<(Option<String>, Option<String>), String> {
+    let _guard = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+    let clipboard = app_handle.clipboard();
+    let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
+    let saved_image = if saved_text.is_none() {
+        clipboard.read_image().ok().map(|image| image.to_owned())
+    } else {
+        None
+    };
+    // Empty clipboard first: any text that shows up afterwards is the selection.
+    let _ = clipboard.clear();
+
+    wait_for_modifiers_release();
+    let sent = with_enigo(app_handle, |enigo| input::send_copy(enigo));
+
+    let mut selection = None;
+    if sent.is_ok() {
+        for _ in 0..20 {
+            std::thread::sleep(Duration::from_millis(25));
+            if let Some(text) = clipboard.read_text().ok().filter(|t| !t.trim().is_empty()) {
+                selection = Some(text);
+                break;
+            }
+        }
+    }
+
+    if let Some(text) = &saved_text {
+        let _ = write_text_to_clipboard(app_handle, text);
+    } else if let Some(image) = saved_image {
+        let _ = clipboard.write_image(&image);
+    } else {
+        let _ = clipboard.clear();
+    }
+    sent?;
+    Ok((selection, saved_text))
+}
+
 /// Attempts to send a key combination using Linux-native tools.
 /// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
 #[cfg(target_os = "linux")]

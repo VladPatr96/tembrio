@@ -74,7 +74,7 @@ mod macos {
     ///
     /// TIS APIs must run on the main thread; paste reaches this via
     /// `clipboard::with_enigo`, which hops there.
-    fn resolve_command_v_keycode() -> Result<u16, String> {
+    fn resolve_command_keycode(letter: u8) -> Result<u16, String> {
         // SAFETY: This function is called on the macOS main thread. The returned
         // source follows the Create Rule and is released by InputSource::drop.
         let source = InputSource(unsafe { TISCopyCurrentKeyboardLayoutInputSource() });
@@ -123,15 +123,20 @@ mod macos {
                 )
             };
 
-            status == 0 && length == 1 && chars[0] == u16::from(b'v')
+            status == 0 && length == 1 && chars[0] == u16::from(letter)
         })
-        .ok_or_else(|| "could not map Cmd+V in the current macOS keyboard layout".to_string())?;
+        .ok_or_else(|| {
+            format!(
+                "could not map Cmd+{} in the current macOS keyboard layout",
+                letter.to_ascii_uppercase() as char
+            )
+        })?;
 
         Ok(keycode)
     }
 
     pub(super) fn command_v_key() -> Key {
-        match resolve_command_v_keycode() {
+        match resolve_command_keycode(b'v') {
             Ok(keycode) => {
                 debug!("Resolved Cmd+V for the active macOS layout to keycode {keycode}");
                 Key::Other(u32::from(keycode))
@@ -143,6 +148,18 @@ mod macos {
                 Key::Other(u32::from(ANSI_V_KEYCODE))
             }
         }
+    }
+
+    // kVK_ANSI_C, the fallback when the active layout cannot be read.
+    const ANSI_C_KEYCODE: u16 = 8;
+
+    pub(super) fn command_c_key() -> Key {
+        resolve_command_keycode(b'c')
+            .map(|keycode| Key::Other(u32::from(keycode)))
+            .unwrap_or_else(|error| {
+                warn!("Could not resolve Cmd+C ({error}); using ANSI C keycode {ANSI_C_KEYCODE}");
+                Key::Other(u32::from(ANSI_C_KEYCODE))
+            })
     }
 }
 
@@ -200,6 +217,29 @@ pub fn send_paste_ctrl_v(enigo: &mut Enigo, hold_ms: u64) -> Result<(), String> 
         .map_err(|e| format!("Failed to release modifier key: {}", e))?;
 
     Ok(())
+}
+
+/// Sends Ctrl+C / Cmd+C to copy the selection of the focused application.
+/// Uses virtual key codes like `send_paste_ctrl_v`, so any keyboard layout works.
+pub fn send_copy(enigo: &mut Enigo) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let (modifier_key, c_key_code) = (Key::Meta, macos::command_c_key());
+    #[cfg(target_os = "windows")]
+    let (modifier_key, c_key_code) = (Key::Control, Key::Other(0x43)); // VK_C
+    #[cfg(target_os = "linux")]
+    let (modifier_key, c_key_code) = (Key::Control, Key::Unicode('c'));
+
+    enigo
+        .key(modifier_key, enigo::Direction::Press)
+        .map_err(|e| format!("Failed to press modifier key: {}", e))?;
+    let click = enigo
+        .key(c_key_code, enigo::Direction::Click)
+        .map_err(|e| format!("Failed to click C key: {}", e));
+    std::thread::sleep(std::time::Duration::from_millis(30));
+    enigo
+        .key(modifier_key, enigo::Direction::Release)
+        .map_err(|e| format!("Failed to release modifier key: {}", e))?;
+    click
 }
 
 /// Sends a Ctrl+Shift+V paste command.

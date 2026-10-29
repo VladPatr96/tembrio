@@ -27,6 +27,7 @@ mod system_languages;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
+mod tts;
 mod utils;
 
 pub use cli::CliArgs;

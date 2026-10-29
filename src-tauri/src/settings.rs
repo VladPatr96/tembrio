@@ -445,6 +445,12 @@ pub struct AppSettings {
     pub clamshell_microphone: Option<String>,
     #[serde(default)]
     pub selected_output_device: Option<String>,
+    /// OpenRouter speech model used by "Speak selection".
+    #[serde(default = "default_tts_model")]
+    pub tts_model: String,
+    /// Voice of `tts_model`; most providers require one.
+    #[serde(default = "default_tts_voice")]
+    pub tts_voice: String,
     #[serde(default = "default_translate_to_english")]
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
@@ -939,6 +945,14 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
+fn default_tts_model() -> String {
+    "google/gemini-3.8-flash-tts".to_string()
+}
+
+fn default_tts_voice() -> String {
+    "Achird".to_string()
+}
+
 pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "windows")]
     let default_shortcut = "ctrl+space";
@@ -980,6 +994,20 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_post_process_shortcut.to_string(),
         },
     );
+    #[cfg(target_os = "macos")]
+    let default_speak_shortcut = "ctrl+option+s";
+    #[cfg(not(target_os = "macos"))]
+    let default_speak_shortcut = "ctrl+alt+s";
+    bindings.insert(
+        "speak_selection".to_string(),
+        ShortcutBinding {
+            id: "speak_selection".to_string(),
+            name: "Speak Selection".to_string(),
+            description: "Reads the selected text aloud; press again to stop.".to_string(),
+            default_binding: default_speak_shortcut.to_string(),
+            current_binding: default_speak_shortcut.to_string(),
+        },
+    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
@@ -1012,6 +1040,8 @@ pub fn get_default_settings() -> AppSettings {
         selected_channel: None,
         clamshell_microphone: None,
         selected_output_device: None,
+        tts_model: default_tts_model(),
+        tts_voice: default_tts_voice(),
         translate_to_english: false,
         selected_language: "auto".to_string(),
         overlay_position: default_overlay_position(),

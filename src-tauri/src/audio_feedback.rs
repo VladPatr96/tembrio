@@ -95,11 +95,11 @@ fn play_sound_at_path(app: &AppHandle, path: &Path) -> Result<(), Box<dyn std::e
     play_audio_file(path, selected_device, volume)
 }
 
-fn play_audio_file(
-    path: &std::path::Path,
+/// Opens the chosen output device ("Default" or None — the system one).
+/// Shared with tts.rs; the returned sink must stay alive while audio plays.
+pub(crate) fn open_output_sink(
     selected_device: Option<String>,
-    volume: f32,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<rodio::MixerDeviceSink, Box<dyn std::error::Error>> {
     let sink_builder = if let Some(device_name) = selected_device {
         if device_name == "Default" {
             debug!("Using default device");
@@ -123,7 +123,15 @@ fn play_audio_file(
         DeviceSinkBuilder::from_default_device()?
     };
 
-    let device_sink = sink_builder.open_stream()?;
+    Ok(sink_builder.open_stream()?)
+}
+
+fn play_audio_file(
+    path: &std::path::Path,
+    selected_device: Option<String>,
+    volume: f32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let device_sink = open_output_sink(selected_device)?;
     let mixer = device_sink.mixer();
 
     let file = File::open(path)?;
