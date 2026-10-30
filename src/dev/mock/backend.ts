@@ -101,6 +101,38 @@ export function installMockBackend(scenario: MockScenario = "returning") {
       app_access: "allowed",
       desktop_app_access: "allowed",
     }),
+    // TtsSettings and the model screens run on these before the first stage
+    // that owns them lands; shapes follow src/bindings.ts.
+    fetch_tts_models: () => [
+      {
+        id: "google/gemini-3.8-flash-tts",
+        name: "Gemini 3.8 Flash TTS",
+        voices: ["Achird", "Aoede", "Kore"],
+        price_per_1k_chars: 0.015,
+      },
+      {
+        id: "elevenlabs/eleven-turbo-v2",
+        name: "ElevenLabs Turbo v2",
+        voices: ["Rachel", "Adam"],
+        price_per_1k_chars: 0.18,
+      },
+    ],
+    get_transcription_model_status: () => MODELS[0].id,
+    get_secure_input_status: () => ({
+      enabled: false,
+      sustained: false,
+      culprit_pid: null,
+      culprit_name: null,
+      fallback_active: false,
+      covered_bindings: [],
+      degraded_bindings: [],
+      uncovered_bindings: [],
+      recorder_blocked: false,
+    }),
+    check_custom_sounds: () => ({ start: false, stop: false }),
+    // A fresh install: nothing dictated yet. Stage 7 gives this real entries.
+    get_history_entries: () => ({ entries: [], has_more: false }),
+    is_update_checks_locked: () => false,
     "plugin:app|version": () => "0.0.0-mock",
     "plugin:app|name": () => "Tembrio",
     "plugin:autostart|is_enabled": () => false,

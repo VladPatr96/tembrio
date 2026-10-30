@@ -1020,5 +1020,35 @@
     "learnMore": "How to fix",
     "recorderBlocked": "Can't record shortcuts right now — macOS Secure Input is blocking key events. Resolve the Secure Input warning first.",
     "dismiss": "Dismiss"
+  },
+  "shell": {
+    "tabs": {
+      "label": "Sections",
+      "voices": "Voices",
+      "dictation": "Dictation",
+      "pronunciation": "Pronunciation",
+      "history": "History",
+      "models": "Models",
+      "costs": "Costs",
+      "general": "General"
+    },
+    "theme": {
+      "cycle": "Theme: {{current}}. Press to switch"
+    },
+    "strip": {
+      "hint": "Select text and press",
+      "ready": "Select text and Tembrio will read it aloud"
+    },
+    "soon": {
+      "when": "Coming soon",
+      "pronunciation": {
+        "title": "Pronunciation",
+        "text": "Here you will see how Tembrio will read a text: numbers, dates, amounts and abbreviations, plus your own pronunciation dictionary."
+      },
+      "costs": {
+        "title": "Costs",
+        "text": "Here you will find today's and this month's spending, your OpenRouter balance, the Central Bank rate and warnings when a limit is close."
+      }
+    }
   }
 }
