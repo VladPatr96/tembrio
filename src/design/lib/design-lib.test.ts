@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { karaokeShift, wordState } from "./karaoke";
+import { formatMoney } from "./money";
 import { hashId, portraitBars } from "./portrait";
 import { tickerCells } from "./ticker";
 
@@ -81,5 +82,67 @@ describe("ticker", () => {
       { kind: "text", text: " " },
       { kind: "text", text: "₽" },
     ]);
+  });
+});
+
+// Amounts from a real OpenRouter bill: a sentence, a page, a day, a balance.
+const RATE = 96.4; // roubles per dollar
+const NBSP = " ";
+
+describe("money in dollars", () => {
+  test("from a cent up: two digits", () => {
+    expect(formatMoney(0.18, "usd", RATE)).toBe("$0.18");
+    expect(formatMoney(12.4, "usd", RATE)).toBe("$12.40");
+  });
+
+  test("below a cent: four digits, so spending never reads as zero", () => {
+    expect(formatMoney(0.0042, "usd", RATE)).toBe("$0.0042");
+  });
+
+  test("a sentence's worth: «меньше тысячной»", () => {
+    expect(formatMoney(0.0004, "usd", RATE)).toBe("<$0.001");
+  });
+
+  test("exactly zero is a clean zero", () => {
+    expect(formatMoney(0, "usd", RATE)).toBe("$0.00");
+  });
+
+  test("digits are cut, never rounded up", () => {
+    expect(formatMoney(0.009999, "usd", RATE)).toBe("$0.0099");
+    expect(formatMoney(0.189, "usd", RATE)).toBe("$0.18");
+  });
+});
+
+describe("money in roubles", () => {
+  test("kopecks below a hundred roubles, with a decimal comma", () => {
+    expect(formatMoney(0.18, "rub", RATE)).toBe(`17,35${NBSP}₽`);
+    expect(formatMoney(0.0042, "rub", RATE)).toBe(`0,40${NBSP}₽`);
+  });
+
+  test("whole roubles from a hundred up, thousands split", () => {
+    expect(formatMoney(12.4, "rub", RATE)).toBe(`1${NBSP}195${NBSP}₽`);
+    expect(formatMoney(20.15, "rub", RATE)).toBe(`1${NBSP}942${NBSP}₽`);
+  });
+
+  test("far below a kopeck says so", () => {
+    expect(formatMoney(0.00004, "rub", RATE)).toBe(
+      "<0,01 ₽".replace(" ", NBSP),
+    );
+  });
+
+  test("a missing rate falls back to dollars instead of «0,00 ₽»", () => {
+    expect(formatMoney(0.18, "rub", 0)).toBe("$0.18");
+    expect(formatMoney(0.18, "rub", Number.NaN)).toBe("$0.18");
+  });
+});
+
+describe("money edge cases", () => {
+  test("a negative balance keeps its sign", () => {
+    expect(formatMoney(-0.18, "usd", RATE)).toBe("-$0.18");
+    expect(formatMoney(-12.4, "rub", RATE)).toBe(`-1${NBSP}195${NBSP}₽`);
+  });
+
+  test("a broken number shows a dash, not a made-up amount", () => {
+    expect(formatMoney(Number.NaN, "usd", RATE)).toBe("—");
   });
 });

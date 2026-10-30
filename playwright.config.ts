@@ -19,6 +19,8 @@ export default defineConfig({
   reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : "list",
   snapshotPathTemplate: "{testDir}/visual/__screenshots__/{arg}{ext}",
   expect: {
+    // The first page of a cold dev server compiles for a few seconds.
+    timeout: 15000,
     toHaveScreenshot: {
       animations: "disabled",
       caret: "hide",
