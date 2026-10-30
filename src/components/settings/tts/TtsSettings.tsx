@@ -70,7 +70,9 @@ export const TtsSettings: React.FC = () => {
     const next = models.find((m) => m.id === id);
     // Keep the voice if the new model has it, else take the model's first voice.
     const voices = next?.voices ?? [];
-    const voice = voices.includes(currentVoice) ? currentVoice : (voices[0] ?? "");
+    const voice = voices.includes(currentVoice)
+      ? currentVoice
+      : (voices[0] ?? "");
     await commands.changeTtsModelSetting(id, voice);
     await refreshSettings();
   };
@@ -102,7 +104,10 @@ export const TtsSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title={t("settings.tts.title")} description={t("settings.tts.description")}>
+      <SettingsGroup
+        title={t("settings.tts.title")}
+        description={t("settings.tts.description")}
+      >
         <ShortcutInput shortcutId="speak_selection" grouped={true} />
         <SettingContainer
           title={t("settings.tts.model.title")}
@@ -115,7 +120,11 @@ export const TtsSettings: React.FC = () => {
               options={modelOptions}
               selectedValue={currentModel || null}
               onSelect={selectModel}
-              placeholder={loading ? t("settings.tts.loading") : t("settings.tts.model.placeholder")}
+              placeholder={
+                loading
+                  ? t("settings.tts.loading")
+                  : t("settings.tts.model.placeholder")
+              }
               disabled={loading && models.length === 0}
               className="min-w-[320px]"
             />
@@ -126,7 +135,9 @@ export const TtsSettings: React.FC = () => {
               disabled={loading}
               title={t("settings.tts.refresh")}
             >
-              <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCcw
+                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
             </Button>
           </div>
         </SettingContainer>
@@ -152,10 +163,21 @@ export const TtsSettings: React.FC = () => {
           descriptionMode="tooltip"
           grouped={true}
         >
-          <Button variant="primary" size="md" onClick={testVoice} disabled={!currentModel}>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={testVoice}
+            disabled={!currentModel}
+          >
             <span className="flex items-center gap-2">
-              {testing ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              {testing ? t("settings.tts.test.stop") : t("settings.tts.test.button")}
+              {testing ? (
+                <Square className="h-4 w-4" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+              {testing
+                ? t("settings.tts.test.stop")
+                : t("settings.tts.test.button")}
             </span>
           </Button>
         </SettingContainer>
