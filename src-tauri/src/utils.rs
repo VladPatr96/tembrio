@@ -23,7 +23,10 @@ pub fn redact_text(text: &str) -> &str {
 }
 
 /// Main window's opening and minimum page size, in logical pixels.
-pub const MAIN_WINDOW_SIZE: (f64, f64) = (720.0, 600.0);
+pub const MAIN_WINDOW_SIZE: (f64, f64) = (980.0, 720.0);
+
+/// How small the window may get: seven tabs still fit, the sections scroll.
+pub const MAIN_WINDOW_MIN_SIZE: (f64, f64) = (820.0, 600.0);
 
 /// Title bar height in logical pixels (macOS draws it inside the inner size).
 /// Call on the main thread.

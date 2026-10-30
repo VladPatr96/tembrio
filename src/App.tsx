@@ -17,7 +17,6 @@ import {
 import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
 import SecureInputWarning from "./components/SecureInputWarning";
-import Footer from "./components/footer";
 import { OnboardingFlow } from "./components/onboarding/OnboardingFlow";
 import ModelMigration from "./components/onboarding/ModelMigration";
 import {
@@ -31,7 +30,8 @@ import {
 import { DebugSettings, ModelsSettings } from "./components/settings";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FileDropOverlay } from "./components/FileDropOverlay";
-import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
+import { Shell } from "./components/shell/Shell";
+import type { TabId } from "./components/shell/tabs";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
@@ -47,33 +47,6 @@ type OnboardingStep =
   | "replaceModel"
   | "done";
 
-const renderSettingsContent = (
-  section: SidebarSection,
-  onPreviewOnboarding: (step: OnboardingPreviewStep) => void,
-  onRunOnboarding: () => void,
-  onRunModelMigration: () => void,
-  onSectionChange: (section: SidebarSection) => void,
-) => {
-  if (section === "models") {
-    return (
-      <ModelsSettings onChangeLanguages={() => onSectionChange("general")} />
-    );
-  }
-  if (section === "debug") {
-    return (
-      <DebugSettings
-        onPreviewOnboarding={onPreviewOnboarding}
-        onRunOnboarding={onRunOnboarding}
-        onRunModelMigration={onRunModelMigration}
-      />
-    );
-  }
-
-  const ActiveComponent =
-    SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
-  return <ActiveComponent />;
-};
-
 function App() {
   const { t, i18n } = useTranslation();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
@@ -84,9 +57,8 @@ function App() {
   // Set when a returning user's selected model is a retired (ONNX) model that
   // is still on disk: they must update it before the app can transcribe.
   const [migrationModelId, setMigrationModelId] = useState<string | null>(null);
-  const [currentSection, setCurrentSection] =
-    useState<SidebarSection>("general");
-  const showHistory = useCallback(() => setCurrentSection("history"), []);
+  const [tab, setTab] = useState<TabId>("voices");
+  const showHistory = useCallback(() => setTab("history"), []);
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -97,10 +69,10 @@ function App() {
   );
   const hasCompletedPostOnboardingInit = useRef(false);
   const settingsScrollRef = useRef<HTMLDivElement>(null);
-  // Reset the scroll position whenever the active section changes.
+  // Reset the scroll position whenever the active tab changes.
   useLayoutEffect(() => {
     settingsScrollRef.current?.scrollTo({ top: 0 });
-  }, [currentSection]);
+  }, [tab]);
 
   useEffect(() => {
     checkOnboardingStatus();
@@ -419,38 +391,21 @@ function App() {
     content = (
       <div
         dir={direction}
-        className="h-screen flex flex-col select-none cursor-default"
+        className="h-screen select-none cursor-default"
+        ref={settingsScrollRef}
       >
         <ErrorBoundary context="What's New">
           <WhatsNewGate />
         </ErrorBoundary>
-        {/* Main content area that takes remaining space */}
-        <div className="flex-1 flex overflow-hidden">
-          <Sidebar
-            activeSection={currentSection}
-            onSectionChange={setCurrentSection}
-          />
-          {/* Scrollable content area */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div ref={settingsScrollRef} className="flex-1 overflow-y-auto">
-              {/* Models fills the window: its table scrolls, not the page. */}
-              <div
-                className={`flex flex-col items-center p-4 gap-4 ${currentSection === "models" ? "h-full" : ""}`}
-              >
-                <SecureInputWarning />
-                {renderSettingsContent(
-                  currentSection,
-                  setOnboardingPreview,
-                  runOnboarding,
-                  runModelMigration,
-                  setCurrentSection,
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Fixed footer at bottom */}
-        <Footer onShowHistory={showHistory} />
+        <SecureInputWarning />
+        <Shell
+          tab={tab}
+          onTabChange={setTab}
+          onShowHistory={showHistory}
+          onPreviewOnboarding={() => setOnboardingPreview("welcome")}
+          onRunOnboarding={runOnboarding}
+          onRunModelMigration={runModelMigration}
+        />
         <FileDropOverlay onDropped={showHistory} />
       </div>
     );
