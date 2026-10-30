@@ -209,6 +209,7 @@ Tembrio is a hard fork of [Handy](https://github.com/cjpais/Handy) (MIT); upstre
 
 - **Pull requests:** one stage per branch and PR, body per [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) — screenshots, the checks that ran, and the manual checklist for what machines cannot check (sound, global hotkeys, paste into other apps, macOS). The human reviews and merges.
 - **Design system:** new UI is built from `@/design` (`src/design`): colours only from `tokens.css`, `tb-*` classes from `kit.css`. The rule is _colour = sound_: the sound gradient appears only where a voice is heard right now, coral only while recording; buttons and switches are ink. Every component is shown on the kit page (`bun run dev:mock`, then `/src/kit/index.html`).
+- **Strings:** `en` is the source; `ru` must stay complete (`bun run check:translations` fails otherwise). Other languages keep Handy's translations and fall back to English for Tembrio's own strings — do not copy English into them.
 - **Tests:** logic → `bun test` beside the code; UI scenarios → Playwright against the mock backend (`src/dev/mock`: give every new command an answer); looks → screenshot baselines, Linux-only (`bun run test:visual` with Docker, or the CI artifact). Look at every changed PNG before committing it. `bun run check` runs the lot.
 - **Mock settings:** when `tsc` flags `src/dev/mock/default-settings.json`, regenerate it: `cargo test --lib write_mock_default_settings -- --ignored`.
 
