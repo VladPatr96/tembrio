@@ -35,4 +35,12 @@ export default [
       ],
     },
   },
+  {
+    // The design kit page is a developer showcase served only by the dev
+    // server; its captions are never shown to users.
+    files: ["src/kit/**/*.{ts,tsx}"],
+    rules: {
+      "i18next/no-literal-string": "off",
+    },
+  },
 ];

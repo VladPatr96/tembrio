@@ -337,6 +337,46 @@
 .swave.arming i:nth-child(5) {
   animation-delay: 300ms;
 }
+/* Reading aloud: no live levels from the player, so a calm travelling wave. */
+.swave.speaking i {
+  height: 14px;
+  animation: swave-speaking 1100ms ease-in-out infinite;
+}
+.swave.speaking i:nth-child(odd) {
+  animation-delay: -550ms;
+}
+.swave.speaking i:nth-child(3n) {
+  animation-delay: -300ms;
+}
+.swave.speaking i:nth-child(4n) {
+  animation-delay: -800ms;
+}
+@keyframes swave-speaking {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+/* Short message (speech failed, nothing selected) */
+.smessage-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-background);
+  background: var(--s-accent);
+  flex: none;
+}
+.swork-label.smessage {
+  color: var(--color-text);
+}
 @keyframes swave-arming {
   0%,
   100% {

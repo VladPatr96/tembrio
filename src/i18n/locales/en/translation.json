@@ -16,7 +16,8 @@
     "postProcessing": "Post Process",
     "history": "History",
     "debug": "Debug",
-    "about": "About"
+    "about": "About",
+    "tts": "Speech"
   },
   "onboarding": {
     "customModelDescription": "Not officially supported",
@@ -899,6 +900,38 @@
           "details": "Handy's local speech-to-text is built on transcribe.cpp and ggml. Thanks to the amazing work by Georgi Gerganov and contributors."
         }
       }
+    },
+    "tts": {
+      "title": "Speak Selection",
+      "description": "Select text in any app and press the shortcut to hear it.",
+      "loading": "Loading models…",
+      "refresh": "Reload the model list",
+      "free": "free",
+      "model": {
+        "title": "Voice Model",
+        "description": "OpenRouter speech model. Price is per 1000 characters.",
+        "placeholder": "Choose a model"
+      },
+      "voice": {
+        "title": "Voice",
+        "description": "Voices of the selected model.",
+        "placeholder": "No voices"
+      },
+      "test": {
+        "title": "Try It",
+        "description": "Reads a sample phrase with the chosen model and voice.",
+        "button": "Test voice",
+        "stop": "Stop"
+      },
+      "key": {
+        "title": "Key",
+        "description": "Speech uses OpenRouter. The same key serves post-processing.",
+        "placeholder": "sk-or-…"
+      },
+      "errors": {
+        "models": "Could not load models: {{message}}",
+        "test": "Could not read the phrase: {{message}}"
+      }
     }
   },
   "footer": {
@@ -962,7 +995,20 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing...",
-    "loadingModel": "Loading model..."
+    "loadingModel": "Loading model...",
+    "speech": {
+      "preparing": "Preparing speech…",
+      "errors": {
+        "noKey": "No OpenRouter key",
+        "badKey": "Wrong OpenRouter key",
+        "noCredits": "OpenRouter balance is empty",
+        "network": "No connection to OpenRouter",
+        "rejected": "The model could not speak",
+        "playback": "Could not play the sound",
+        "nothingSelected": "Select some text first",
+        "copyFailed": "Could not read the selection"
+      }
+    }
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",

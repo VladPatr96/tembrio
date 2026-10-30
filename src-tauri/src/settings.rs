@@ -1455,6 +1455,20 @@ pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeri
 mod tests {
     use super::*;
 
+    /// Writes the default settings for the browser mock backend
+    /// (`src/dev/mock/default-settings.json`). Run by hand after changing
+    /// `AppSettings`: `cargo test --lib write_mock_default_settings -- --ignored`.
+    /// `bunx tsc` flags the fixture when it falls behind the bindings.
+    #[test]
+    #[ignore]
+    fn write_mock_default_settings() {
+        let json = serde_json::to_string_pretty(&get_default_settings())
+            .expect("default settings serialize");
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../src/dev/mock/default-settings.json");
+        std::fs::write(path, json + "\n").expect("write the mock fixture");
+    }
+
     #[test]
     fn stored_binding_returns_the_requested_binding() {
         let settings = get_default_settings();

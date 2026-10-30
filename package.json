@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "vite --mode mock",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
@@ -15,6 +16,8 @@
     "format:frontend": "prettier --write .",
     "format:backend": "cd src-tauri && cargo fmt",
     "test:keyboard": "bun src/lib/utils/keyboard.test.ts",
+    "test:unit": "bun test src",
+    "test:visual": "bun scripts/test-visual.ts",
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
     "check:translations": "bun scripts/check-translations.ts",
@@ -23,7 +26,8 @@
     "check:catalog": "bun scripts/sync-catalog.ts --check",
     "build:cjk-font": "bun scripts/build-cjk-font.ts",
     "check:cjk-font": "bun scripts/build-cjk-font.ts --check",
-    "postinstall": "bun scripts/check-nix-deps.ts"
+    "postinstall": "bun scripts/check-nix-deps.ts",
+    "check": "bun run format:check && bun run lint && tsc --noEmit && bun run check:translations && bun run test:unit && bun run test:playwright && cd src-tauri && cargo test --lib"
   },
   "dependencies": {
     "@handy-computer/models": "0.2.3",
@@ -57,6 +61,7 @@
   "devDependencies": {
     "@playwright/test": "^1.58.0",
     "@tauri-apps/cli": "^2.11.0",
+    "@types/bun": "^1.4.4",
     "@types/node": "^24.9.1",
     "@types/react": "^18.3.26",
     "@types/react-dom": "^18.3.7",

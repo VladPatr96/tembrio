@@ -685,6 +685,47 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
 /// the instant it drained, well inside the 300 ms hide delay.
 static OVERLAY_SHOW_GENERATION: AtomicU64 = AtomicU64::new(0);
 
+/// Shows a speech state ("speech-prep", "speaking", "message") and returns the
+/// generation this show will get, for `hide_overlay_if_current`. The show itself
+/// lands on the main thread a moment later, which is why we predict it.
+pub fn show_speech_overlay(app_handle: &AppHandle, state: &str) -> u64 {
+    let generation = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) + 1;
+    show_overlay_state(app_handle, state);
+    generation
+}
+
+/// Hides the overlay unless someone (dictation, another reading) has shown it since.
+pub fn hide_overlay_if_current(app_handle: &AppHandle, generation: u64) {
+    if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) == generation {
+        hide_recording_overlay(app_handle);
+    }
+}
+
+/// How long a short message stays in the pill.
+const MESSAGE_SHOW_MS: u64 = 4000;
+
+#[derive(Clone, serde::Serialize)]
+struct OverlayMessage<'a> {
+    key: &'a str,
+    detail: &'a str,
+}
+
+/// Shows a short message in the pill for a few seconds. `key` is a translation
+/// key under `overlay.speech.errors`; `detail` is shown on hover.
+pub fn show_overlay_message(app_handle: &AppHandle, key: &str, detail: &str) {
+    let _ = app_handle.emit_to(
+        "recording_overlay",
+        "overlay-message",
+        OverlayMessage { key, detail },
+    );
+    let generation = show_speech_overlay(app_handle, "message");
+    let handle = app_handle.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(MESSAGE_SHOW_MS));
+        hide_overlay_if_current(&handle, generation);
+    });
+}
+
 /// Hides the recording overlay window with fade-out animation
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
     // Always hide the overlay regardless of settings - if setting was changed while recording,

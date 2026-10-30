@@ -13,7 +13,20 @@ import i18n, { syncLanguageFromSettings } from "@/i18n";
 import type { ModelStateEvent } from "@/lib/types/events";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
-type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
+type OverlayState =
+  | "recording"
+  | "streaming"
+  | "transcribing"
+  | "processing"
+  // Speak selection: waiting for OpenRouter, reading aloud, a short message.
+  | "speech-prep"
+  | "speaking"
+  | "message";
+
+interface OverlayMessage {
+  key: string;
+  detail: string;
+}
 
 // Number of reactive bars in the waveform (the simple, smoothed style shared by
 // every overlay form). Mic levels arrive as 16 FFT buckets; we take the first N.
@@ -29,6 +42,10 @@ const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
+  const [message, setMessage] = useState<OverlayMessage>({
+    key: "",
+    detail: "",
+  });
   // `Stream::play()` returning does not mean hardware callbacks are flowing.
   // Stay visually in an arming state until the backend processes the first
   // actual microphone sample chunk.
@@ -113,6 +130,11 @@ const RecordingOverlay: React.FC = () => {
         setCaptureReady(false);
       });
 
+      const unlistenMessage = await listen<OverlayMessage>(
+        "overlay-message",
+        (event) => setMessage(event.payload),
+      );
+
       const unlistenReady = await listen("recording-ready", () => {
         setElapsed(0);
         setCaptureReady(true);
@@ -171,6 +193,7 @@ const RecordingOverlay: React.FC = () => {
         unlistenShow();
         unlistenHide();
         unlistenReady();
+        unlistenMessage();
         unlistenLevel();
         unlistenStream();
         unlistenPhase();
@@ -241,11 +264,15 @@ const RecordingOverlay: React.FC = () => {
     </div>
   );
 
+  const isSpeech = state === "speech-prep" || state === "speaking";
+
   const cancelBtn = (
     <button
       className="sx"
       aria-label="cancel"
-      onClick={() => commands.cancelOperation()}
+      onClick={() =>
+        isSpeech ? commands.stopTts() : commands.cancelOperation()
+      }
     >
       <svg viewBox="0 0 16 16" aria-hidden="true">
         <path
@@ -340,6 +367,50 @@ const RecordingOverlay: React.FC = () => {
                 true,
               )
             : listeningRow(open, true)}
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Speak selection: same pill, its own rows ----
+  if (state === "speaking" || state === "message" || state === "speech-prep") {
+    const row =
+      state === "speech-prep" ? (
+        workingRow(t("overlay.speech.preparing"), true)
+      ) : state === "speaking" ? (
+        <div className="sbase">
+          <div className="sbase-l">
+            <span className="sdot ready" />
+          </div>
+          <div className="swave speaking">
+            {Array.from({ length: WAVE_BARS }, (_, i) => (
+              <i key={i} />
+            ))}
+          </div>
+          <div className="sbase-r">{cancelBtn}</div>
+        </div>
+      ) : (
+        <div className="sbase" title={message.detail}>
+          <div className="sbase-l">
+            <span className="smessage-icon">!</span>
+          </div>
+          <span className="swork-label smessage">
+            {t(`overlay.speech.errors.${message.key}`, {
+              defaultValue: t("overlay.speech.errors.rejected"),
+            })}
+          </span>
+          <div className="sbase-r" />
+        </div>
+      );
+    return (
+      <div
+        dir={direction}
+        className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
+      >
+        <div
+          className={`scard compact ${state !== "speaking" && isVisible ? "cworking" : ""}`}
+        >
+          {row}
         </div>
       </div>
     );

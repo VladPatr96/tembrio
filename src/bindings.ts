@@ -567,6 +567,41 @@ async showMainWindowCommand() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async fetchTtsModels() : Promise<Result<TtsModel[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("fetch_tts_models") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeTtsModelSetting(model: string, voice: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_tts_model_setting", { model, voice }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeTtsVoiceSetting(voice: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_tts_voice_setting", { voice }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async testTtsVoice() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("test_tts_voice") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopTts() : Promise<void> {
+    await TAURI_INVOKE("stop_tts");
+},
 async cancelOperation() : Promise<void> {
     await TAURI_INVOKE("cancel_operation");
 },
@@ -1095,7 +1130,15 @@ whats_new_last_seen_version?: string; selected_model?: string; onboarding_comple
  * Which input channel to use on the selected microphone device.
  * None means "average all channels" (original behavior).
  */
-selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; 
+selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null;
+/**
+ * OpenRouter speech model used by "Speak selection".
+ */
+tts_model?: string; 
+/**
+ * Voice of `tts_model`; most providers require one.
+ */
+tts_voice?: string; translate_to_english?: boolean; selected_language?: string; 
 /**
  * Every language the person dictates in (codes, e.g. ["en", "zh"]),
  * picked during onboarding. Empty until then.
@@ -1139,6 +1182,14 @@ language_detection_window_secs?: number;
  * `overlay_position` (position `none` → style `None`).
  */
 overlay_style?: OverlayStyle }
+/**
+ * A speech model as shown in the settings window.
+ */
+export type TtsModel = { id: string; name: string; voices: string[]; 
+/**
+ * USD per 1000 characters; 0 for free models.
+ */
+price_per_1k_chars: number }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AutoUnavailableReason = 

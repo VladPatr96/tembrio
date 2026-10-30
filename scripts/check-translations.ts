@@ -26,6 +26,14 @@ function getLanguages(): string[] {
 
 const LANGUAGES = getLanguages();
 
+/**
+ * Languages Tembrio keeps complete. Every other language ships with Handy's
+ * translations: Tembrio's own strings are missing there, and i18next falls
+ * back to English (`fallbackLng`), so a gap is reported but does not fail CI.
+ * Adding a key to `en` means adding it to `ru`.
+ */
+const STRICT_LANGS = new Set(["ru"]);
+
 // Colors for terminal output
 const colors: Record<string, string> = {
   reset: "\x1b[0m",
@@ -138,7 +146,7 @@ function validateTranslations(): void {
       extra,
     };
 
-    if (missing.length > 0 || extra.length > 0) {
+    if ((missing.length > 0 || extra.length > 0) && STRICT_LANGS.has(lang)) {
       hasErrors = true;
     }
   }
@@ -153,6 +161,13 @@ function validateTranslations(): void {
     if (result.valid) {
       console.log(
         colorize(`✓ ${lang.toUpperCase()}: All keys present`, "green"),
+      );
+    } else if (!STRICT_LANGS.has(lang)) {
+      console.log(
+        colorize(
+          `○ ${lang.toUpperCase()}: ${result.missing.length} untranslated (falls back to English)`,
+          "yellow",
+        ),
       );
     } else {
       console.log(colorize(`✗ ${lang.toUpperCase()}: Issues found`, "red"));
@@ -198,26 +213,34 @@ function validateTranslations(): void {
   console.log("─".repeat(60));
 
   // Summary
-  const validCount = Object.values(results).filter((r) => r.valid).length;
-  const totalCount = LANGUAGES.length;
+  const strict = LANGUAGES.filter((lang) => STRICT_LANGS.has(lang));
+  const strictValid = strict.filter((lang) => results[lang].valid).length;
+  const partial = LANGUAGES.filter(
+    (lang) => !STRICT_LANGS.has(lang) && !results[lang].valid,
+  ).length;
 
   if (hasErrors) {
     console.log(
       colorize(
-        `\n✗ Validation failed: ${validCount}/${totalCount} languages passed`,
+        `
+Validation failed: ${strictValid}/${strict.length} required languages complete`,
         "red",
       ),
     );
     process.exit(1);
-  } else {
-    console.log(
-      colorize(
-        `\n✓ All ${totalCount} languages have complete translations!`,
-        "green",
-      ),
-    );
-    process.exit(0);
   }
+
+  console.log(
+    colorize(
+      `
+Required languages complete: ${strict.join(", ")}` +
+        (partial > 0
+          ? ` (${partial} more fall back to English for new strings)`
+          : ""),
+      "green",
+    ),
+  );
+  process.exit(0);
 }
 
 // Run validation
