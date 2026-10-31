@@ -11,6 +11,8 @@
  */
 
 :root {
+  /* Native widgets (scrollbars, select popups) follow the theme too. */
+  color-scheme: light;
   --tb-light-paper: #fbf8f3;
   --tb-light-surface: #ffffff;
   --tb-light-surface-2: #f5f1ea;
@@ -68,10 +70,8 @@
     system-ui, sans-serif;
   --tb-mono: "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
 
-  /* The pill is dark in both themes: it floats over any app. */
-  --tb-pill: #15131c;
-  --tb-pill-ink: #f2eee7;
-  --tb-pill-ink-faint: #a9a3b5;
+  /* The pill wears the app's own colours (paper and ink), so it changes with
+     the theme like everything else; the sound gradient stays its only colour. */
 
   --tb-paper: var(--tb-light-paper);
   --tb-surface: var(--tb-light-surface);
@@ -135,6 +135,7 @@
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --tb-paper: var(--tb-dark-paper);
   --tb-surface: var(--tb-dark-surface);
   --tb-surface-2: var(--tb-dark-surface-2);

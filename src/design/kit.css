@@ -160,6 +160,13 @@ svg.tb-i {
   border-color: var(--tb-ink);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--tb-ink) 12%, transparent);
 }
+/* The option list of a native select is drawn by the system, not by us: it has
+   to be told the current theme's colours, or a themed page gets a black list
+   with black text (as the tray panel's voice picker did). */
+select.tb-field option {
+  background: var(--tb-surface);
+  color: var(--tb-ink);
+}
 select.tb-field {
   appearance: none;
   padding-right: 30px;
@@ -953,8 +960,10 @@ textarea.tb-field {
 }
 
 /* ── pill ───────────────────────────────────────────────────── */
-/* The speech pill: always dark, whatever the theme — it floats over other
-   programs. Deliberately not var() driven except for the sound gradient. */
+/* The speech pill wears the app's own colours: paper and ink in the light
+   theme, its dark surface in the dark one. It floats over other programs, and a
+   light pill on a dark desktop is what the prototype's light theme shows. The
+   gradient stays the only colour in it — that is the «colour = sound» rule. */
 /* The pill floats in a rectangle window; centre it so its shadow and the
    speaking glow fade out inside the window instead of being cut by its edge. */
 .ov-stage:has(> .tb-pill) {
@@ -968,13 +977,13 @@ textarea.tb-field {
    The inset hairline and the speaking ring stay. */
 .ov-stage > .tb-pill,
 .ov-stage > .tb-pill.tb-speak {
-  box-shadow: inset 0 0 0 1px #ffffff14;
+  box-shadow: inset 0 0 0 1px var(--tb-edge);
 }
 /* Speaking keeps its sound ring, but a tighter glow: the window around the
    oval is only a few pixels larger than the pill. */
 .ov-stage > .tb-pill.tb-speak {
   box-shadow:
-    inset 0 0 0 1px #ffffff14,
+    inset 0 0 0 1px var(--tb-edge),
     0 0 0 1.5px color-mix(in srgb, var(--tb-s2) 70%, transparent);
 }
 .tb-pill {
@@ -989,8 +998,8 @@ textarea.tb-field {
      the window's square corners behind the pill. */
   margin: 6px;
   border-radius: 22px;
-  background: #15131c;
-  color: #f2eee7;
+  background: var(--tb-surface);
+  color: var(--tb-ink);
   font-family: var(--tb-font);
   display: flex;
   align-items: center;
@@ -1001,7 +1010,7 @@ textarea.tb-field {
   font-size: 13px;
   box-shadow:
     0 16px 34px -14px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 1px #ffffff14;
+    inset 0 0 0 1px var(--tb-edge);
   animation: tb-pcin 0.3s 0.12s both;
 }
 @keyframes tb-pcin {
@@ -1014,8 +1023,8 @@ textarea.tb-field {
   height: 28px;
   border-radius: 50%;
   border: 0;
-  background: #ffffff14;
-  color: #f2eee7;
+  background: var(--tb-surface-2);
+  color: var(--tb-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1023,7 +1032,7 @@ textarea.tb-field {
   cursor: pointer;
 }
 .tb-pbt:hover {
-  background: #ffffff26;
+  background: var(--tb-surface-3);
 }
 .tb-pbt svg.tb-i {
   width: 14px;
@@ -1031,10 +1040,15 @@ textarea.tb-field {
   vertical-align: 0;
 }
 .tb-mut {
-  color: #a9a3b5;
+  color: var(--tb-ink-soft);
 }
 .tb-shim {
-  background: linear-gradient(90deg, #8e88a0 0%, #f2eee7 50%, #8e88a0 100%);
+  background: linear-gradient(
+    90deg,
+    var(--tb-ink-faint) 0%,
+    var(--tb-ink) 50%,
+    var(--tb-ink-faint) 100%
+  );
   background-size: 200% 100%;
   background-clip: text;
   -webkit-background-clip: text;
@@ -1053,10 +1067,10 @@ textarea.tb-field {
   min-width: 240px;
 }
 .tb-pill .tb-kara .tb-w {
-  color: #77718a;
+  color: var(--tb-ink-faint);
 }
 .tb-pill .tb-kara .tb-w.tb-past {
-  color: #b9b3c4;
+  color: var(--tb-ink-soft);
 }
 .tb-pvoice {
   font-weight: 600;
@@ -1069,7 +1083,7 @@ textarea.tb-field {
   bottom: 4px;
   height: 2px;
   border-radius: 1px;
-  background: #ffffff14;
+  background: var(--tb-surface-3);
   overflow: hidden;
 }
 .tb-pprog i {
@@ -1082,14 +1096,14 @@ textarea.tb-field {
 .tb-pill.tb-speak {
   box-shadow:
     0 16px 34px -14px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 1px #ffffff14,
+    inset 0 0 0 1px var(--tb-edge),
     0 0 0 1.5px color-mix(in srgb, var(--tb-s2) 70%, transparent),
     0 0 26px -4px color-mix(in srgb, var(--tb-s1) 70%, transparent);
 }
-/* The spinner sits on the dark pill while a voice is being prepared. */
+/* The spinner takes the pill's ink while a voice is being prepared. */
 .tb-pill .tb-spinner {
-  border-color: #ffffff30;
-  border-top-color: #f2eee7;
+  border-color: var(--tb-surface-3);
+  border-top-color: var(--tb-ink);
   width: 16px;
   height: 16px;
 }
@@ -1115,8 +1129,8 @@ textarea.tb-field {
 .tb-pact {
   margin-left: auto;
   border: 0;
-  background: #ffffff1c;
-  color: #f2eee7;
+  background: var(--tb-surface-3);
+  color: var(--tb-ink);
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 12px;
@@ -1125,7 +1139,7 @@ textarea.tb-field {
   cursor: pointer;
 }
 .tb-pact:hover {
-  background: #ffffff2c;
+  background: var(--tb-edge-strong);
 }
 
 /* ── costs ─────────────────────────────────────────────── */
