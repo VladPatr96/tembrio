@@ -9,6 +9,8 @@
 //! a moment, and a menu that opens late feels broken. Hiding on focus loss keeps
 //! the "click anywhere to dismiss" behaviour of a real popover.
 
+use std::sync::Mutex;
+
 use tauri::{
     AppHandle, Emitter, Manager, PhysicalPosition, Rect, WebviewUrl, WebviewWindowBuilder,
 };
@@ -42,6 +44,10 @@ impl Mode {
 }
 
 pub const EVENT: &str = "tray-panel";
+
+/// Where the icon was when the panel opened, so a later resize can re-anchor
+/// instead of growing off the screen.
+static LAST_ICON: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
 
 /// Top-left corner for the window, in physical pixels.
 ///
@@ -102,39 +108,69 @@ pub fn show(app: &AppHandle, mode: Mode, icon_rect: Option<Rect>) {
         height: logical_h,
     }));
 
-    // Without a tray rectangle (a keyboard shortcut, or a platform that does not
-    // report one) the window opens in the corner of the work area next to the
-    // icon's usual place.
     if let Some(rect) = icon_rect {
-        let (icon_x, icon_y, icon_w, icon_h) = rect_in_physical(rect, scale);
-        let position = window
-            .current_monitor()
-            .ok()
-            .flatten()
-            .map(|monitor| {
-                let mon = monitor.position();
-                let size = monitor.size();
-                panel_origin(
-                    (icon_x, icon_y, icon_w, icon_h),
-                    (mon.x, mon.y, size.width, size.height),
-                    (logical_w * scale, logical_h * scale),
-                    (6.0 * scale).round(),
-                )
-            })
-            .unwrap_or_else(|| {
-                (
-                    (icon_x + icon_w - logical_w * scale) as i32,
-                    (icon_y - logical_h * scale) as i32,
-                )
-            });
-        let _ = window.set_position(tauri::Position::Physical(PhysicalPosition::new(
-            position.0, position.1,
-        )));
+        let icon = rect_in_physical(rect, scale);
+        if let Ok(mut last) = LAST_ICON.lock() {
+            *last = Some(icon);
+        }
+        place(&window, icon, (logical_w, logical_h), scale);
     }
 
     let _ = app.emit_to("tray_panel", EVENT, mode.as_str());
     let _ = window.show();
     let _ = window.set_focus();
+}
+
+/// Puts the window above the icon (or below it, when the taskbar is on top),
+/// right-aligned with it and inside the monitor.
+fn place(window: &tauri::WebviewWindow, icon: (f64, f64, f64, f64), size: (f64, f64), scale: f64) {
+    let position = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|monitor| {
+            let mon = monitor.position();
+            let monitor_size = monitor.size();
+            panel_origin(
+                icon,
+                (mon.x, mon.y, monitor_size.width, monitor_size.height),
+                (size.0 * scale, size.1 * scale),
+                (6.0 * scale).round(),
+            )
+        })
+        .unwrap_or_else(|| {
+            (
+                (icon.0 + icon.2 - size.0 * scale) as i32,
+                (icon.1 - size.1 * scale) as i32,
+            )
+        });
+    let _ = window.set_position(tauri::Position::Physical(PhysicalPosition::new(
+        position.0, position.1,
+    )));
+}
+
+/// Resizes the window to the sheet the page has drawn.
+///
+/// The page is the only one who knows how tall the panel really is: a larger
+/// system text size zooms the webview, a translation makes a label longer, and
+/// the voice name can wrap. Guessing a size cut the right edge off the panel on
+/// a machine with text scaling. So the page measures itself and says.
+pub fn resize(app: &AppHandle, width: f64, height: f64) {
+    let Some(window) = app.get_webview_window("tray_panel") else {
+        return;
+    };
+    // A sanity clamp: a runaway measurement must not create a window bigger than
+    // the screen.
+    let width = width.clamp(200.0, 640.0);
+    let height = height.clamp(120.0, 900.0);
+    let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+    // A taller panel grows upward: keep it anchored to the icon it belongs to.
+    let scale = window.scale_factor().unwrap_or(1.0);
+    if let Ok(last) = LAST_ICON.lock() {
+        if let Some(icon) = *last {
+            place(&window, icon, (width, height), scale);
+        }
+    }
 }
 
 /// Hides the panel; called from the page (Escape, an action picked) and when the

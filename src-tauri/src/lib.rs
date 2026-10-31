@@ -412,6 +412,15 @@ fn hide_tray_panel(app: AppHandle) {
     tray_panel::hide(&app);
 }
 
+/// The tray panel measures its own sheet and asks for a window that fits it —
+/// text scaling, a longer translation or a wrapping voice name all change the
+/// size, and a fixed one cut the panel's right edge off.
+#[tauri::command]
+#[specta::specta]
+fn resize_tray_panel(app: AppHandle, width: f64, height: f64) {
+    tray_panel::resize(&app, width, height);
+}
+
 /// Convert an unexpected panic on the headless worker into a normal CLI
 /// failure. Without this guard the Tauri event loop remains alive after the
 /// worker exits, leaving `--transcribe-file` hung indefinitely.
@@ -746,6 +755,7 @@ pub fn run(cli_args: CliArgs) {
             tts::pause_tts,
             tts::speak_clipboard_command,
             hide_tray_panel,
+            resize_tray_panel,
             shortcut::change_transcribe_accelerator_setting,
             shortcut::change_transcribe_gpu_device,
             shortcut::get_available_accelerators,

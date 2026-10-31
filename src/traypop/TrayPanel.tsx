@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -170,10 +170,31 @@ export function TrayPanel() {
   // rather than inventing a number.
   const today = useMemo(() => formatMoney(0, "usd", 0), []);
 
+  // The window follows the sheet, not the other way round: the page is the only
+  // one who knows the real size (system text scaling, longer translations, a
+  // wrapping voice name). Measured after paint, once per change.
+  const sheet = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const element = sheet.current;
+    if (!element) return;
+    const measure = () => {
+      const rect = element.getBoundingClientRect();
+      // 6 px margin on each side, as .tp-root pads.
+      void commands.resizeTrayPanel(
+        Math.ceil(rect.width) + 12,
+        Math.ceil(rect.height) + 12,
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [mode, voice, speaking, paused]);
+
   if (mode === "menu") {
     return (
       <div className="tp-root">
-        <div className="tb-traymenu tp-menu" role="menu">
+        <div className="tb-traymenu tp-menu" role="menu" ref={sheet}>
           <button
             type="button"
             role="menuitem"
@@ -248,7 +269,7 @@ export function TrayPanel() {
 
   return (
     <div className="tp-root">
-      <div className="tb-traypop tp-panel">
+      <div className="tb-traypop tp-panel" ref={sheet}>
         <div className="tb-tph">
           <span className="tp-logo">
             <Wordmark />
