@@ -1,4 +1,14 @@
 /* Layout of the design kit page only (ported from the v5 showcase sheet). */
+
+/* The shelf is a still picture of a live interface: animations are pinned to
+   their first frame so the same page always screenshots the same, and a looping
+   pulse (the logo's arcs, the spinner, the capturing hotkey) never lands on a
+   different frame in CI than it did locally. */
+.kp-sheet *,
+.kp-sheet *::before,
+.kp-sheet *::after {
+  animation: none !important;
+}
 .kp-sheet {
   max-width: 1180px;
   margin: 0 auto;
