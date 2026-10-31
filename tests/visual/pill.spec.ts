@@ -60,7 +60,12 @@ const STATES = [
 for (const state of STATES) {
   test(state.name, async ({ page }) => {
     await page.goto("/src/overlay/index.html");
-    await expect(page.locator("body")).toBeAttached();
+    // Events sent before the overlay subscribes are lost, so wait for it.
+    await page.waitForFunction(
+      () =>
+        (window as { __overlayListenersReady?: boolean })
+          .__overlayListenersReady === true,
+    );
     await page.evaluate(
       ([state, payload]) => {
         window.__TEMBRIO_MOCK__?.emit("show-overlay", state);
