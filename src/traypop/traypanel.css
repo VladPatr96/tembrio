@@ -1,0 +1,89 @@
+/*
+ * The tray panel window's own bits: the page is a floating sheet, so the glass
+ * and its placement in the window are here, while everything inside (rows,
+ * buttons, menu) is the design kit's own classes.
+ */
+.tp-root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 6px;
+  box-sizing: border-box;
+  font-family: var(--tb-font);
+  color: var(--tb-ink);
+}
+
+/* Both looks live inside a window that is only slightly larger than they are;
+   the radius looks better when the sheet fills the window rather than floats. */
+.tp-panel {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  animation: none;
+}
+
+.tp-logo {
+  height: 20px;
+  display: inline-flex;
+}
+
+.tp-panel .tb-state i[data-sound] {
+  background: var(--tb-sound);
+}
+
+.tp-hint {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.tp-panel .tb-tpf {
+  align-items: center;
+}
+
+.tp-today {
+  margin-left: auto;
+  color: var(--tb-ink-soft);
+}
+
+.tp-today b {
+  color: var(--tb-ink);
+}
+
+.tp-menu {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  min-width: 0;
+  animation: none;
+}
+
+/* Keycaps sit next to each other in a menu row and need a little air. */
+.tp-menu button {
+  white-space: nowrap;
+}
+
+.tp-menu button span {
+  white-space: nowrap;
+}
+
+.tp-menu button span .tb-kbd + .tb-kbd {
+  margin-left: 3px;
+}
+
+.tp-panel .tb-tpv small {
+  display: block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tp-menu-voice {
+  margin-left: auto;
+  font-weight: 600;
+}

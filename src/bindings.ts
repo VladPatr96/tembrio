@@ -549,6 +549,13 @@ async pauseTts() : Promise<void> {
 async speakClipboardCommand() : Promise<void> {
     await TAURI_INVOKE("speak_clipboard_command");
 },
+/**
+ * Closes the tray panel — the page asks for it after an action, on Escape, and
+ * when the window is told to go away from the keyboard.
+ */
+async hideTrayPanel() : Promise<void> {
+    await TAURI_INVOKE("hide_tray_panel");
+},
 async changeTranscribeAcceleratorSetting(accelerator: TranscribeAcceleratorSetting) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_transcribe_accelerator_setting", { accelerator }) };
