@@ -31,6 +31,8 @@ export const GeneralSettings: React.FC = () => {
         <ShortcutActivationSetting descriptionMode="tooltip" grouped={true} />
         {/* Cancel shortcut remains hidden on Linux because of dynamic shortcut instability. */}
         {!isLinux && <ShortcutInput shortcutId="cancel" grouped={true} />}
+        {/* Pause Speech: holds a reading; with nothing reading, it does nothing. */}
+        <ShortcutInput shortcutId="pause_speech" grouped={true} />
       </SettingsGroup>
       <SettingsGroup title={t("settings.languages.title")}>
         <PreferredLanguages descriptionMode="tooltip" grouped={true} />

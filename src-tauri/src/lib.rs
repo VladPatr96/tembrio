@@ -23,6 +23,7 @@ mod secure_input;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod sound_state;
 mod system_languages;
 mod transcription_coordinator;
 mod tray;
@@ -722,6 +723,8 @@ pub fn run(cli_args: CliArgs) {
             tts::change_tts_voice_setting,
             tts::test_tts_voice,
             tts::stop_tts,
+            tts::pause_tts,
+            tts::speak_clipboard_command,
             shortcut::change_transcribe_accelerator_setting,
             shortcut::change_transcribe_gpu_device,
             shortcut::get_available_accelerators,

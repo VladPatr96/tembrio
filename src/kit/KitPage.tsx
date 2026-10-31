@@ -35,6 +35,7 @@ import {
   formatMoney,
   type Currency,
 } from "@/design";
+import { V5_SHELVES } from "./KitV5";
 
 /*
  * The living version of the v5 showcase: every building block of the
@@ -544,6 +545,16 @@ export function KitPage() {
             </Cell>
           </div>
         </Shelf>
+        {V5_SHELVES.map((shelf) => (
+          <Shelf
+            key={shelf.n}
+            n={shelf.n}
+            title={shelf.title}
+            lead={shelf.lead}
+          >
+            {shelf.body}
+          </Shelf>
+        ))}
       </div>
     </div>
   );

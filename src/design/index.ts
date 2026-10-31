@@ -5,6 +5,7 @@
  */
 export { Icon, ICON_NAMES, SoundGradientDefs, type IconName } from "./Icon";
 export { Wordmark, ForkMark } from "./Wordmark";
+export { TrayIcon, type TrayState } from "./ui/TrayIcon";
 export {
   Button,
   Checkbox,

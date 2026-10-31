@@ -961,6 +961,18 @@ impl ShortcutAction for SpeakSelectionAction {
     }
 }
 
+// Pause Speech Action: holds the reading (or resumes it). Without a reading
+// going the press does nothing, unlike speak_selection which starts one.
+struct PauseSpeechAction;
+
+impl ShortcutAction for PauseSpeechAction {
+    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        crate::tts::pause_speech(app);
+    }
+
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {}
+}
+
 // Test Action
 struct TestAction;
 
@@ -1006,6 +1018,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         Arc::new(SpeakSelectionAction {
             stopped_on_press: std::sync::atomic::AtomicBool::new(false),
         }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "pause_speech".to_string(),
+        Arc::new(PauseSpeechAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "test".to_string(),

@@ -185,48 +185,6 @@ const ICONS = {
       strokeLinejoin="round"
     />
   ),
-  "tray-idle": (
-    <path
-      d="M4 4h6v6a2 2 0 0 0 4 0V4h6M12 12v8"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  ),
-  "tray-recording": (
-    <path
-      d="M5 12h2l2-4 3 8 3-8 2 4h2"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  ),
-  "tray-speaking": (
-    <path
-      d="M5 10h4l4-3v10l-4-3H5zM16 9c3 2 3 4 0 6"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  ),
-  "tray-transcribing": (
-    <path
-      d="M6 12a6 6 0 1 1 2 4.5M6 17v-4h4"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  ),
-  "tray-warning": (
-    <>
-      <path
-        d="M4 4h6v6a2 2 0 0 0 4 0V4h6M12 12v8"
-        strokeWidth={2}
-        strokeLinecap="round"
-      />
-      <path d="M18 16v3m0 2h.01" strokeWidth={2} strokeLinecap="round" />
-    </>
-  ),
   voices: (
     <path
       d="M5 5v7a7 7 0 0 0 14 0V5M12 19v3"

@@ -491,6 +491,64 @@ async changeShowTrayIconSetting(enabled: boolean) : Promise<Result<null, string>
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * OpenRouter speech models, cheapest first.
+ */
+async fetchTtsModels() : Promise<Result<TtsModel[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("fetch_tts_models") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Switches the speech model; `voice` is the voice to use with it (models have
+ * different voice sets, so both change together).
+ */
+async changeTtsModelSetting(model: string, voice: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_tts_model_setting", { model, voice }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeTtsVoiceSetting(voice: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_tts_voice_setting", { voice }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Reads a sample phrase with the current model and voice; the error, if any,
+ * goes back to the settings window.
+ */
+async testTtsVoice() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("test_tts_voice") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopTts() : Promise<void> {
+    await TAURI_INVOKE("stop_tts");
+},
+/**
+ * Holds still or resumes the phrase being read (pill button, hotkey).
+ */
+async pauseTts() : Promise<void> {
+    await TAURI_INVOKE("pause_tts");
+},
+/**
+ * Reads the clipboard aloud: the tray panel button and its hotkey.
+ */
+async speakClipboardCommand() : Promise<void> {
+    await TAURI_INVOKE("speak_clipboard_command");
+},
 async changeTranscribeAcceleratorSetting(accelerator: TranscribeAcceleratorSetting) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_transcribe_accelerator_setting", { accelerator }) };
@@ -566,41 +624,6 @@ async showMainWindowCommand() : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
-},
-async fetchTtsModels() : Promise<Result<TtsModel[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("fetch_tts_models") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async changeTtsModelSetting(model: string, voice: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("change_tts_model_setting", { model, voice }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async changeTtsVoiceSetting(voice: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("change_tts_voice_setting", { voice }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async testTtsVoice() : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("test_tts_voice") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async stopTts() : Promise<void> {
-    await TAURI_INVOKE("stop_tts");
 },
 async cancelOperation() : Promise<void> {
     await TAURI_INVOKE("cancel_operation");
@@ -1050,10 +1073,8 @@ async updateRecordingRetentionPeriod(period: string) : Promise<Result<null, stri
 }
 },
 /**
- * Checks if the Mac is a laptop by detecting battery presence
- * 
- * This uses pmset to check for battery information.
- * Returns true if a battery is detected (laptop), false otherwise (desktop)
+ * Stub implementation for non-macOS platforms
+ * Always returns false since laptop detection is macOS-specific
  */
 async isLaptop() : Promise<Result<boolean, string>> {
     try {
@@ -1130,7 +1151,7 @@ whats_new_last_seen_version?: string; selected_model?: string; onboarding_comple
  * Which input channel to use on the selected microphone device.
  * None means "average all channels" (original behavior).
  */
-selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null;
+selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null; 
 /**
  * OpenRouter speech model used by "Speak selection".
  */
@@ -1182,14 +1203,6 @@ language_detection_window_secs?: number;
  * `overlay_position` (position `none` → style `None`).
  */
 overlay_style?: OverlayStyle }
-/**
- * A speech model as shown in the settings window.
- */
-export type TtsModel = { id: string; name: string; voices: string[]; 
-/**
- * USD per 1000 characters; 0 for free models.
- */
-price_per_1k_chars: number }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AutoUnavailableReason = 
@@ -1527,6 +1540,14 @@ export type TranscriptionOutcome =
  * Transcribing or pasting failed.
  */
 "failed"
+/**
+ * A speech model as shown in the settings window.
+ */
+export type TtsModel = { id: string; name: string; voices: string[]; 
+/**
+ * USD per 1000 characters; 0 for free models.
+ */
+price_per_1k_chars: number }
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type VadBackend = "silero" | "earshot"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
