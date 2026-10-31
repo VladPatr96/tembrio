@@ -58,13 +58,23 @@ test.describe("speech pill", () => {
     noErrors();
   });
 
-  test("preparing shimmers, with no voice yet", async ({ page }) => {
+  test("preparing spins and names the voice it waits for", async ({ page }) => {
     await emit(page, "show-overlay", "speech-prep");
-    await emit(page, "sound-state", { kind: "preparing" });
+    await emit(page, "sound-state", { kind: "preparing", voice: "Achird" });
     const pill = page.locator(".tb-pill");
     await expect(pill).toBeVisible();
-    await expect(pill.locator(".tb-shim")).toHaveText(/Готовлю голос/);
+    await expect(pill.locator(".tb-spinner")).toBeVisible();
+    await expect(pill).toContainText("Готовлю голос Achird…");
+    // Nothing to pause or stop until the voice sounds.
     await expect(pill.locator(".tb-pbt")).toHaveCount(0);
+  });
+
+  test("preparing without a voice name still says what is happening", async ({
+    page,
+  }) => {
+    await emit(page, "show-overlay", "speech-prep");
+    await emit(page, "sound-state", { kind: "preparing" });
+    await expect(page.locator(".tb-pill")).toContainText(/Готовлю голос/);
   });
 
   test("pause holds the word and the button turns into «continue»", async ({

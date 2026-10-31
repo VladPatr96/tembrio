@@ -77,19 +77,22 @@ test.describe("window shell", () => {
     await expect(strip.locator(".tb-kbd")).toHaveText(["Ctrl", "Alt", "S"]);
   });
 
-  test("the theme button walks light, dark and system", async ({ page }) => {
+  test("the theme button flips light and dark in one press", async ({
+    page,
+  }) => {
     await page.goto("/");
     const button = page.locator(".tb-toolbar .tb-icon-btn");
     const theme = () =>
       page.evaluate(() => document.documentElement.dataset.theme ?? "system");
 
-    // The mock starts on the system theme, so the first press goes light.
+    // The mock starts on «like the system»; one press must always change what
+    // is on screen, so it picks the opposite of the current look.
     expect(await theme()).toBe("system");
+    await button.click();
+    expect(await theme()).toBe("dark");
     await button.click();
     expect(await theme()).toBe("light");
     await button.click();
     expect(await theme()).toBe("dark");
-    await button.click();
-    expect(await theme()).toBe("system");
   });
 });
