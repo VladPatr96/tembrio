@@ -10,7 +10,9 @@ const host = process.env.TAURI_DEV_HOST;
 const mockEntry = (): Plugin => ({
   name: "tembrio-mock-entry",
   transformIndexHtml: (html) =>
-    html.replace("/src/main.tsx", "/src/dev/mock/entry.ts"),
+    html
+      .replace("/src/main.tsx", "/src/dev/mock/entry.ts")
+      .replace("/src/overlay/main.tsx", "/src/dev/mock/overlay-entry.ts"),
 });
 
 // https://vitejs.dev/config/

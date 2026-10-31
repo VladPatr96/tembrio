@@ -22,6 +22,14 @@ const SHELVES = [
   "messages",
   "settings-group",
   "sound",
+  "pill",
+  "tray",
+  "rows",
+  "voice-cards",
+  "pron",
+  "try",
+  "tray-panel",
+  "onboarding",
 ];
 
 for (const theme of ["light", "dark"] as const) {

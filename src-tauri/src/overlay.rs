@@ -1,7 +1,7 @@
 use crate::input;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
@@ -49,16 +49,26 @@ tauri_panel! {
 const OVERLAY_WIDTH: f64 = 256.0;
 const OVERLAY_HEIGHT: f64 = 50.0;
 
+// The speech pill (preparing / speaking / message) carries a voice name, the
+// karaoke line and two buttons in one row, so it needs room: at the compact
+// 256 px the phrase was squeezed to its first letters and the pill's rounded
+// ends were cut by the window edge. The pill itself still shrinks to its text
+// (see .tb-pill in kit.css); this is only the window that can hold it.
+const OVERLAY_SPEECH_WIDTH: f64 = 470.0;
+// Taller than the 44 px pill on purpose: the pill is centred in it, so its
+// drop shadow and glow have room to fade instead of hitting the window edge.
+const OVERLAY_SPEECH_HEIGHT: f64 = 64.0;
+
 // Actual is 394x118, just a little extra
 const OVERLAY_STREAM_WIDTH: f64 = 400.0;
 const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 
 /// Overlay window size (logical) for a given UI state.
 fn overlay_dimensions(state: &str) -> (f64, f64) {
-    if state == "streaming" {
-        (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT)
-    } else {
-        (OVERLAY_WIDTH, OVERLAY_HEIGHT)
+    match state {
+        "streaming" => (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT),
+        "speech-prep" | "speaking" | "message" => (OVERLAY_SPEECH_WIDTH, OVERLAY_SPEECH_HEIGHT),
+        _ => (OVERLAY_WIDTH, OVERLAY_HEIGHT),
     }
 }
 
@@ -288,6 +298,30 @@ fn current_overlay_logical_size(window: &tauri::webview::WebviewWindow) -> Optio
 
 #[cfg(target_os = "windows")]
 static WINDOWS_OVERLAY_IS_STREAMING: AtomicBool = AtomicBool::new(false);
+/// Which of the three sizes the Windows overlay currently wants. `place_windows_overlay`
+/// recomputes bounds from it, so a later reposition never shrinks the speech pill
+/// back to the compact width.
+static WINDOWS_OVERLAY_SIZE: AtomicU8 = AtomicU8::new(0);
+const WINDOWS_SIZE_COMPACT: u8 = 0;
+const WINDOWS_SIZE_STREAM: u8 = 1;
+const WINDOWS_SIZE_SPEECH: u8 = 2;
+
+fn windows_size_kind(state: &str) -> u8 {
+    match state {
+        "streaming" => WINDOWS_SIZE_STREAM,
+        "speech-prep" | "speaking" | "message" => WINDOWS_SIZE_SPEECH,
+        _ => WINDOWS_SIZE_COMPACT,
+    }
+}
+
+/// The state name for the size the Windows overlay last asked for.
+fn windows_size_state() -> &'static str {
+    match WINDOWS_OVERLAY_SIZE.load(Ordering::Relaxed) {
+        WINDOWS_SIZE_STREAM => "streaming",
+        WINDOWS_SIZE_SPEECH => "speaking",
+        _ => "recording",
+    }
+}
 
 /// Windows accessibility text size (Settings > Accessibility > Text size), a
 /// separate axis from display scaling that WebView2 applies as a document zoom.
@@ -539,6 +573,7 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
                 overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
             #[cfg(target_os = "windows")]
             WINDOWS_OVERLAY_IS_STREAMING.store(state == "streaming", Ordering::Relaxed);
+            WINDOWS_OVERLAY_SIZE.store(windows_size_kind(state), Ordering::Relaxed);
             let size_elapsed = size_started.elapsed();
 
             let pos_started = std::time::Instant::now();
@@ -652,12 +687,7 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
 
         #[cfg(target_os = "windows")]
         {
-            let state = if WINDOWS_OVERLAY_IS_STREAMING.load(Ordering::Relaxed) {
-                "streaming"
-            } else {
-                "recording"
-            };
-            let (width, height) = overlay_dimensions(state);
+            let (width, height) = overlay_dimensions(windows_size_state());
             if let Err(error) = place_windows_overlay(app_handle, &overlay_window, width, height) {
                 log::error!("Failed to update recording overlay position: {error}");
             }

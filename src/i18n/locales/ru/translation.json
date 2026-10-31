@@ -350,6 +350,10 @@
           "transcribe_with_post_process": {
             "name": "Горячая клавиша постобработки",
             "description": "Специальное сочетание клавиш для ИИ-постобработки вашей транскрипции."
+          },
+          "pause_speech": {
+            "name": "Пауза чтения",
+            "description": "Придерживает чтение; ещё раз — продолжает."
           }
         },
         "errors": {
@@ -997,7 +1001,7 @@
     "processing": "Обработка...",
     "loadingModel": "Загрузка модели...",
     "speech": {
-      "preparing": "Готовлю речь…",
+      "preparing": "Готовлю голос…",
       "errors": {
         "noKey": "Нет ключа OpenRouter",
         "badKey": "Неверный ключ OpenRouter",
@@ -1007,7 +1011,17 @@
         "playback": "Не удалось включить звук",
         "nothingSelected": "Сначала выделите текст",
         "copyFailed": "Не удалось взять выделенное"
-      }
+      },
+      "pause": "Пауза",
+      "resume": "Продолжить",
+      "actions": {
+        "noKey": "Добавить",
+        "noCredits": "Пополнить"
+      },
+      "nothingCopied": "В буфере нет текста",
+      "copyFailed": "Буфер обмена недоступен",
+      "stop": "Стоп",
+      "preparingVoice": "Готовлю голос {{voice}}…"
     }
   },
   "secureInput": {

@@ -2,6 +2,11 @@ import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
+// The speech pill is built from the Tembrio design kit (its tokens and
+// component styles); dictation rows keep the overlay's own CSS until their
+// stage replaces them.
+import "@/design/tokens.css";
+import "@/design/kit.css";
 import { commands, events } from "@/bindings";
 import type {
   StreamPhase,
@@ -9,9 +14,28 @@ import type {
   StreamTextEvent,
   StreamWorkKind,
 } from "@/bindings";
+import { Icon, Karaoke } from "@/design";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import type { ModelStateEvent } from "@/lib/types/events";
 import { getLanguageDirection } from "@/lib/utils/rtl";
+
+/** Payload of the `sound-state` event (src-tauri/src/sound_state.rs). */
+interface SoundState {
+  kind: "idle" | "preparing" | "speaking" | "message";
+  paused?: boolean;
+  voice?: string;
+  words?: string[];
+  word_index?: number;
+  progress?: number;
+  message_key?: string;
+  message_detail?: string;
+}
+
+/** What a pill action button does for an error message. */
+const MESSAGE_ACTIONS: Record<string, { labelKey: string; open: boolean }> = {
+  noKey: { labelKey: "overlay.speech.actions.noKey", open: true },
+  noCredits: { labelKey: "overlay.speech.actions.noCredits", open: true },
+};
 
 type OverlayState =
   | "recording"
@@ -46,6 +70,10 @@ const RecordingOverlay: React.FC = () => {
     key: "",
     detail: "",
   });
+  // The latest `sound-state` payload. Progress updates after the first one
+  // carry no word list, so the words of the live phrase are sticky in a ref.
+  const [sound, setSound] = useState<SoundState | null>(null);
+  const wordsRef = useRef<string[]>([]);
   // `Stream::play()` returning does not mean hardware callbacks are flowing.
   // Stay visually in an arming state until the backend processes the first
   // actual microphone sample chunk.
@@ -128,12 +156,21 @@ const RecordingOverlay: React.FC = () => {
       const unlistenHide = await listen("hide-overlay", () => {
         setIsVisible(false);
         setCaptureReady(false);
+        setSound(null);
+        wordsRef.current = [];
       });
 
       const unlistenMessage = await listen<OverlayMessage>(
         "overlay-message",
         (event) => setMessage(event.payload),
       );
+
+      const unlistenSound = await listen<SoundState>("sound-state", (event) => {
+        if (event.payload.words && event.payload.words.length > 0) {
+          wordsRef.current = event.payload.words;
+        }
+        setSound(event.payload);
+      });
 
       const unlistenReady = await listen("recording-ready", () => {
         setElapsed(0);
@@ -155,6 +192,10 @@ const RecordingOverlay: React.FC = () => {
       const unlistenStream = await events.streamTextEvent.listen((event) => {
         setStreamText(event.payload);
       });
+
+      // Playwright and the dev-timeline tests wait for this flag: before it,
+      // events fire into a window with no listeners yet and are lost.
+      window.__overlayListenersReady = true;
 
       const unlistenPhase = await events.streamPhaseEvent.listen((event) => {
         const payload: StreamPhaseEvent = event.payload;
@@ -194,6 +235,7 @@ const RecordingOverlay: React.FC = () => {
         unlistenHide();
         unlistenReady();
         unlistenMessage();
+        unlistenSound();
         unlistenLevel();
         unlistenStream();
         unlistenPhase();
@@ -372,43 +414,102 @@ const RecordingOverlay: React.FC = () => {
     );
   }
 
-  // ---- Speak selection: same pill, its own rows ----
+  // ---- Speak selection: the Tembrio speech pill ----
   if (state === "speaking" || state === "message" || state === "speech-prep") {
-    const row =
-      state === "speech-prep" ? (
-        workingRow(t("overlay.speech.preparing"), true)
-      ) : state === "speaking" ? (
-        <div className="sbase">
-          <div className="sbase-l">
-            <span className="sdot ready" />
-          </div>
-          <div className="swave speaking">
-            {Array.from({ length: WAVE_BARS }, (_, i) => (
-              <i key={i} />
-            ))}
-          </div>
-          <div className="sbase-r">{cancelBtn}</div>
-        </div>
-      ) : (
-        <div className="sbase" title={message.detail}>
-          <div className="sbase-l">
-            <span className="smessage-icon">!</span>
-          </div>
-          <span className="swork-label smessage">
-            {t(`overlay.speech.errors.${message.key}`, {
+    const kind =
+      sound?.kind ??
+      (state === "speaking"
+        ? "speaking"
+        : state === "speech-prep"
+          ? "preparing"
+          : "message");
+    const info = message.detail || sound?.message_detail || "";
+
+    let row: React.ReactNode;
+    if (kind === "preparing") {
+      // The prototype's look: a spinner and the voice we are waiting for.
+      const voice = sound?.voice ?? "";
+      row = (
+        <>
+          <span className="tb-spinner tb-pill-spin" aria-hidden />
+          <span className="tb-mut">
+            {voice
+              ? t("overlay.speech.preparingVoice", { voice })
+              : t("overlay.speech.preparing")}
+          </span>
+        </>
+      );
+    } else if (kind === "message") {
+      const key = message.key || sound?.message_key || "rejected";
+      const tone =
+        key === "cannotPlay" || key === "badKey" || key === "rejected"
+          ? "tb-err"
+          : "tb-warn";
+      const action = MESSAGE_ACTIONS[key];
+      row = (
+        <>
+          <span className={`tb-wicon ${tone}`} title={info} aria-hidden>
+            !
+          </span>
+          <span title={info}>
+            {t(`overlay.speech.errors.${key}`, {
               defaultValue: t("overlay.speech.errors.rejected"),
             })}
           </span>
-          <div className="sbase-r" />
-        </div>
+          {action && (
+            <button
+              type="button"
+              className="tb-pact"
+              onClick={() => void commands.showMainWindowCommand()}
+            >
+              {t(action.labelKey)}
+            </button>
+          )}
+        </>
       );
+    } else {
+      const words = sound?.words ?? wordsRef.current;
+      const paused = sound?.paused ?? false;
+      const progress = sound?.progress ?? 0;
+      const voice = sound?.voice ?? "";
+      const wordIndex = sound?.word_index ?? 0;
+      row = (
+        <>
+          {voice ? <span className="tb-pvoice">{voice}</span> : null}
+          <Karaoke words={words} current={wordIndex} />
+          <button
+            type="button"
+            className="tb-pbt"
+            aria-label={t(
+              paused ? "overlay.speech.resume" : "overlay.speech.pause",
+            )}
+            onClick={() => void commands.pauseTts()}
+          >
+            <Icon name={paused ? "play" : "pause"} />
+          </button>
+          <button
+            type="button"
+            className="tb-pbt"
+            aria-label={t("overlay.speech.stop")}
+            onClick={() => void commands.stopTts()}
+          >
+            <Icon name="stop" />
+          </button>
+          <span className="tb-pprog" aria-hidden>
+            <i style={{ width: `${Math.round(progress * 100)}%` }} />
+          </span>
+        </>
+      );
+    }
+
     return (
       <div
         dir={direction}
         className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
       >
         <div
-          className={`scard compact ${state !== "speaking" && isVisible ? "cworking" : ""}`}
+          className={`tb-pill ${kind === "speaking" ? "tb-speak" : ""}`}
+          role="status"
         >
           {row}
         </div>

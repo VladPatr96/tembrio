@@ -50,21 +50,31 @@ type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   icon: IconName;
   /** Required: an icon-only button needs a spoken name. */
   label: string;
+  /**
+   * "css" draws our own tooltip above the button; "native" leaves it to the
+   * system. Buttons in the window's top bar use "native": a CSS tooltip there
+   * would be drawn outside the window and clipped into a dark sliver at the top
+   * edge — the artifact it leaves looks like a stray black bar.
+   */
+  tooltip?: "css" | "native";
 };
 
 export function IconButton({
   icon,
   label,
+  tooltip = "css",
   className,
   type = "button",
   ...rest
 }: IconButtonProps) {
+  const popup = tooltip === "css";
   return (
     <button
       type={type}
-      className={cx("tb-icon-btn tb-tip", className)}
+      className={cx("tb-icon-btn", popup && "tb-tip", className)}
       aria-label={label}
-      data-tip={label}
+      title={popup ? undefined : label}
+      data-tip={popup ? label : undefined}
       {...rest}
     >
       <Icon name={icon} />

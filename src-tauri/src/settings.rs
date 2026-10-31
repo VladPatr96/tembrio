@@ -1008,6 +1008,20 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_speak_shortcut.to_string(),
         },
     );
+    #[cfg(target_os = "macos")]
+    let default_pause_shortcut = "ctrl+option+p";
+    #[cfg(not(target_os = "macos"))]
+    let default_pause_shortcut = "ctrl+alt+p";
+    bindings.insert(
+        "pause_speech".to_string(),
+        ShortcutBinding {
+            id: "pause_speech".to_string(),
+            name: "Pause Speech".to_string(),
+            description: "Holds the reading; press again to continue.".to_string(),
+            default_binding: default_pause_shortcut.to_string(),
+            current_binding: default_pause_shortcut.to_string(),
+        },
+    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {

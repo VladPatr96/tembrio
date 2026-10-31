@@ -350,6 +350,10 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "pause_speech": {
+            "name": "Pause Speech",
+            "description": "Holds the reading; press again to continue."
           }
         },
         "errors": {
@@ -997,7 +1001,7 @@
     "processing": "Processing...",
     "loadingModel": "Loading model...",
     "speech": {
-      "preparing": "Preparing speech…",
+      "preparing": "Preparing the voice…",
       "errors": {
         "noKey": "No OpenRouter key",
         "badKey": "Wrong OpenRouter key",
@@ -1007,7 +1011,17 @@
         "playback": "Could not play the sound",
         "nothingSelected": "Select some text first",
         "copyFailed": "Could not read the selection"
-      }
+      },
+      "pause": "Pause",
+      "resume": "Resume",
+      "actions": {
+        "noKey": "Add key",
+        "noCredits": "Add credits"
+      },
+      "nothingCopied": "The clipboard has no text",
+      "copyFailed": "Clipboard is unavailable",
+      "stop": "Stop",
+      "preparingVoice": "Preparing {{voice}}…"
     }
   },
   "secureInput": {

@@ -8,7 +8,7 @@ test.describe("design kit", () => {
     const { noErrors } = watchErrors(page);
     await page.goto(KIT);
 
-    await expect(page.locator("[data-shelf]")).toHaveCount(10);
+    await expect(page.locator("[data-shelf]")).toHaveCount(18);
     await expect(
       page.getByRole("img", { name: "Tembrio" }).first(),
     ).toBeVisible();

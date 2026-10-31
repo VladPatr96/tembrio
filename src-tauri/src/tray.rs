@@ -41,11 +41,14 @@ pub enum TrayIconState {
     Idle,
     Recording,
     Transcribing,
+    /// A voice is sounding (or held reading): the sound-wave icon.
+    Speaking,
 }
 
 impl TrayIconState {
-    /// Recording and Transcribing share the same menu ("Cancel" instead of the
-    /// model submenu), so only the idle/busy distinction matters for the menu.
+    /// Recording, Transcribing and Speaking share the busy menu ("Cancel"
+    /// instead of the model submenu), so only the idle/busy distinction
+    /// matters for the menu.
     fn is_busy(self) -> bool {
         self != TrayIconState::Idle
     }
@@ -204,16 +207,20 @@ pub fn get_icon_path(theme: AppTheme, state: TrayIconState, warning: bool) -> &'
     match (theme, state) {
         // Dark theme uses light icons
         (AppTheme::Dark, TrayIconState::Idle) => "resources/tray_idle.png",
+        (AppTheme::Dark, TrayIconState::Speaking) => "resources/tray_speaking.png",
         (AppTheme::Dark, TrayIconState::Recording) => "resources/tray_recording.png",
         (AppTheme::Dark, TrayIconState::Transcribing) => "resources/tray_transcribing.png",
         // Light theme uses dark icons
         (AppTheme::Light, TrayIconState::Idle) => "resources/tray_idle_dark.png",
+        (AppTheme::Light, TrayIconState::Speaking) => "resources/tray_speaking_dark.png",
         (AppTheme::Light, TrayIconState::Recording) => "resources/tray_recording_dark.png",
         (AppTheme::Light, TrayIconState::Transcribing) => "resources/tray_transcribing_dark.png",
         // Colored theme uses pink icons (for Linux)
         (AppTheme::Colored, TrayIconState::Idle) => "resources/handy.png",
         (AppTheme::Colored, TrayIconState::Recording) => "resources/recording.png",
         (AppTheme::Colored, TrayIconState::Transcribing) => "resources/transcribing.png",
+        // Colored (Linux): reuse the recording disc, Linux has no tray icon set.
+        (AppTheme::Colored, TrayIconState::Speaking) => "resources/recording.png",
     }
 }
 
