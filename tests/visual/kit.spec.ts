@@ -42,8 +42,12 @@ for (const theme of ["light", "dark"] as const) {
     SHELVES.forEach((name, i) => {
       test(name, async ({ page }) => {
         const shelf = page.locator(`[data-shelf="${i + 1}"]`);
+        // Animations finish at their end state before the picture is taken:
+        // the logo draws itself in and the sound gradient pulses, so a live
+        // animation makes the comparison differ from run to run.
         await expect(shelf).toHaveScreenshot(
           `kit-${theme}-${i + 1}-${name}.png`,
+          { animations: "disabled" },
         );
       });
     });

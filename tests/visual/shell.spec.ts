@@ -33,7 +33,7 @@ for (const theme of ["light", "dark"] as const) {
         await page.getByRole("button", { name: view.tab, exact: true }).click();
         await expect(page.locator(".tb-shell")).toHaveScreenshot(
           `shell-${theme}-${view.name}.png`,
-          { maxDiffPixelRatio: 0.02 },
+          { maxDiffPixelRatio: 0.02, animations: "disabled" },
         );
       });
     }

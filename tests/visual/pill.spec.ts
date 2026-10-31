@@ -76,6 +76,7 @@ for (const state of STATES) {
     await expect(page.locator(".tb-pill")).toBeVisible();
     await expect(page.locator(".tb-pill")).toHaveScreenshot(
       `pill-${state.name}.png`,
+      { animations: "disabled" },
     );
   });
 }
