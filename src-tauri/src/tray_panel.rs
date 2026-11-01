@@ -49,6 +49,14 @@ pub const EVENT: &str = "tray-panel";
 /// instead of growing off the screen.
 static LAST_ICON: Mutex<Option<(f64, f64, f64, f64)>> = Mutex::new(None);
 
+/// The size the page last asked for, per look. Opening the panel with the
+/// design's number and then shrinking it to the page's measurement made it
+/// clip for a frame and jump; the remembered size is the page's own answer, so
+/// a second open starts already right.
+static SIZES: Mutex<Option<((f64, f64), (f64, f64))>> = Mutex::new(None);
+/// Which look is on screen, so a measurement lands in the right slot.
+static CURRENT: Mutex<Option<Mode>> = Mutex::new(None);
+
 /// Top-left corner for the window, in physical pixels.
 ///
 /// The window sits above the tray icon and is right-aligned with it (the icon
@@ -102,7 +110,7 @@ pub fn show(app: &AppHandle, mode: Mode, icon_rect: Option<Rect>) {
     };
 
     let scale = window.scale_factor().unwrap_or(1.0);
-    let (logical_w, logical_h) = mode.size();
+    let (logical_w, logical_h) = size_for(mode);
     let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize {
         width: logical_w,
         height: logical_h,
@@ -116,6 +124,9 @@ pub fn show(app: &AppHandle, mode: Mode, icon_rect: Option<Rect>) {
         place(&window, icon, (logical_w, logical_h), scale);
     }
 
+    if let Ok(mut current) = CURRENT.lock() {
+        *current = Some(mode);
+    }
     let _ = app.emit_to("tray_panel", EVENT, mode.as_str());
     let _ = window.show();
     let _ = window.set_focus();
@@ -159,11 +170,18 @@ pub fn resize(app: &AppHandle, width: f64, height: f64) {
     let Some(window) = app.get_webview_window("tray_panel") else {
         return;
     };
+    let mode = *CURRENT
+        .lock()
+        .ok()
+        .and_then(|c| *c)
+        .as_ref()
+        .unwrap_or(&Mode::Panel);
     // A sanity clamp: a runaway measurement must not create a window bigger than
     // the screen.
     let width = width.clamp(200.0, 640.0);
     let height = height.clamp(120.0, 900.0);
     let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+    remember(mode, (width, height));
     // A taller panel grows upward: keep it anchored to the icon it belongs to.
     let scale = window.scale_factor().unwrap_or(1.0);
     if let Ok(last) = LAST_ICON.lock() {
@@ -171,6 +189,29 @@ pub fn resize(app: &AppHandle, width: f64, height: f64) {
             place(&window, icon, (width, height), scale);
         }
     }
+}
+
+/// The size to give a look: what the page measured last time, else the design.
+fn size_for(mode: Mode) -> (f64, f64) {
+    let stored = SIZES.lock().ok().and_then(|sizes| *sizes);
+    match (stored, mode) {
+        (Some((panel, _)), Mode::Panel) => panel,
+        (Some((_, menu)), Mode::Menu) => menu,
+        (None, mode) => mode.size(),
+    }
+}
+
+/// Remembers a page measurement for its look.
+fn remember(mode: Mode, size: (f64, f64)) {
+    let Ok(mut sizes) = SIZES.lock() else {
+        return;
+    };
+    let mut current = sizes.unwrap_or((Mode::Panel.size(), Mode::Menu.size()));
+    match mode {
+        Mode::Panel => current.0 = size,
+        Mode::Menu => current.1 = size,
+    }
+    *sizes = Some(current);
 }
 
 /// Hides the panel; called from the page (Escape, an action picked) and when the

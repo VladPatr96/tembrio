@@ -412,6 +412,17 @@ fn hide_tray_panel(app: AppHandle) {
     tray_panel::hide(&app);
 }
 
+/// Dictation from the tray panel: a toggle, exactly like the external trigger
+/// (SIGUSR2, CLI) — the same coordinator decides whether this press starts or
+/// stops, so the panel cannot drift from the hotkey.
+#[tauri::command]
+#[specta::specta]
+fn start_dictation_command(app: AppHandle) {
+    use tauri::Manager;
+    app.state::<TranscriptionCoordinator>()
+        .send_external_input("transcribe", "tray-panel");
+}
+
 /// The tray panel measures its own sheet and asks for a window that fits it —
 /// text scaling, a longer translation or a wrapping voice name all change the
 /// size, and a fixed one cut the panel's right edge off.
@@ -756,6 +767,7 @@ pub fn run(cli_args: CliArgs) {
             tts::speak_clipboard_command,
             hide_tray_panel,
             resize_tray_panel,
+            start_dictation_command,
             shortcut::change_transcribe_accelerator_setting,
             shortcut::change_transcribe_gpu_device,
             shortcut::get_available_accelerators,

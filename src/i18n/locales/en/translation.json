@@ -1069,7 +1069,8 @@
     "state": {
       "idle": "resting",
       "speaking": "reading",
-      "paused": "paused"
+      "paused": "paused",
+      "preparing": "Preparing the voice"
     },
     "voice": "Voice",
     "noVoice": "No voice chosen",
@@ -1086,6 +1087,7 @@
       "settings": "Settings",
       "quit": "Close the panel"
     },
-    "shortNoKey": "no key"
+    "shortNoKey": "no key",
+    "hide": "Hide"
   }
 }

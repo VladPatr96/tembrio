@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Icon,
   Kbd,
@@ -34,12 +33,6 @@ function useSoundState() {
     const unlisten = listen<SoundStateEvent>("sound-state", (event) =>
       setState(event.payload),
     );
-    // Ask for a fresh state when the panel opens: it may have been hidden for a
-    // long time and its last known state is stale.
-    void commands
-      .getAppSettings()
-      .then(() => undefined)
-      .catch(() => undefined);
     return () => {
       void unlisten.then((off) => off());
     };
@@ -65,25 +58,27 @@ function useSettings() {
   return settings;
 }
 
-/** Voice names for the picker, from the speech catalog. */
-function useVoices() {
-  const [voices, setVoices] = useState<string[]>([]);
+/**
+ * Voices of the speech catalog, grouped by model.
+ *
+ * A voice belongs to a model: «meredith» exists on one OpenAI model and means
+ * nothing to Google's. Flattening every voice into one list — which the panel
+ * did at first — offered names the current model answers with a 400, so picking
+ * one looked like the picker was broken.
+ */
+function useVoiceGroups() {
+  const [groups, setGroups] = useState<TtsModel[]>([]);
   useEffect(() => {
     let alive = true;
     void commands.fetchTtsModels().then((result) => {
       if (!alive || result.status !== "ok") return;
-      const all = (result.data as TtsModel[]).flatMap((model) => model.voices);
-      setVoices([...new Set(all)]);
+      setGroups(result.data as TtsModel[]);
     });
     return () => {
       alive = false;
-      void unlisten?.();
     };
-    function unlisten() {
-      alive = false;
-    }
   }, []);
-  return voices;
+  return groups;
 }
 
 /** A binding as keycaps, e.g. `Ctrl+Alt+S` → three keys. */
@@ -115,13 +110,24 @@ function bindingOf(
   return entry?.current_binding ?? undefined;
 }
 
+/*
+ * Hide the panel only *after* the command has been sent: a hidden WebView2 may
+ * suspend its page, and an invoke that has not left the page yet dies with it —
+ * which looked like «the panel closes and nothing happens».
+ */
+const run = (command: () => Promise<unknown>) => {
+  void command();
+  void commands.hideTrayPanel();
+};
 const close = () => void commands.hideTrayPanel();
 
 /** `google/gemini-3.8-flash-tts` → «gemini-3.8-flash-tts», the part people read. */
 function modelLabel(model?: string): string {
   if (!model) return "";
   const tail = model.split("/").pop() ?? model;
-  return tail.replace(/-tts$/, "");
+  // `gemini-3.8-flash-tts` → `gemini-3.8-flash`; `heygen-voice-1-turbo:free` →
+  // `heygen-voice-1-turbo` — the «:free» tag is a price, not a name.
+  return tail.replace(/-tts$/, "").replace(/:free$/, "");
 }
 
 export function TrayPanel() {
@@ -129,7 +135,7 @@ export function TrayPanel() {
   const [mode, setMode] = useState<Mode>("panel");
   const settings = useSettings();
   const sound = useSoundState();
-  const voices = useVoices();
+  const groups = useVoiceGroups();
 
   useEffect(() => {
     const unlisten = listen<Mode>("tray-panel", (event) =>
@@ -140,10 +146,6 @@ export function TrayPanel() {
       if (event.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
-    void getCurrentWindow()
-      .isVisible()
-      .then(() => undefined)
-      .catch(() => undefined);
     return () => {
       window.removeEventListener("keydown", onKey);
       void unlisten.then((off) => off());
@@ -156,15 +158,39 @@ export function TrayPanel() {
   const [speed, setSpeed] = useState(1.1);
   const speaking = sound?.kind === "speaking";
   const paused = Boolean(sound?.paused);
+  // The dot's colour comes from this one attribute: kit.css paints it grey while
+  // idle, the sound gradient while reading and coral while the mic is open.
+  const dot = speaking
+    ? "speaking"
+    : sound?.kind === "preparing"
+      ? "preparing"
+      : sound?.kind === "message"
+        ? "message"
+        : "idle";
   const stateLabel = speaking
     ? paused
       ? t("trayPanel.state.paused")
       : t("trayPanel.state.speaking")
-    : t("trayPanel.state.idle");
+    : sound?.kind === "preparing"
+      ? t("trayPanel.state.preparing")
+      : t("trayPanel.state.idle");
 
-  const setVoice = useCallback((next: string) => {
-    void commands.changeTtsVoiceSetting(next);
-  }, []);
+  // A pick is a model *and* a voice: choosing «meredith» means switching to the
+  // model that has her, or the request fails on the current one.
+  const picked = `${settings?.tts_model ?? ""}::${voice}`;
+  const known = groups.some((group) => group.id === settings?.tts_model);
+  const setPicked = useCallback(
+    (next: string) => {
+      const [model, name] = next.split("::");
+      if (!model || !name) return;
+      if (model === settings?.tts_model) {
+        void commands.changeTtsVoiceSetting(name);
+        return;
+      }
+      void commands.changeTtsModelSetting(model, name);
+    },
+    [settings?.tts_model],
+  );
 
   // Spent today is filled by the costs stage; until then the panel says «$0.00»
   // rather than inventing a number.
@@ -208,10 +234,7 @@ export function TrayPanel() {
           <button
             type="button"
             role="menuitem"
-            onClick={() => {
-              close();
-              void commands.speakClipboardCommand();
-            }}
+            onClick={() => run(() => commands.speakClipboardCommand())}
           >
             {t("trayPanel.menu.clipboard")}
             <span>
@@ -225,10 +248,7 @@ export function TrayPanel() {
           <button
             type="button"
             role="menuitem"
-            onClick={() => {
-              close();
-              void commands.pauseTts();
-            }}
+            onClick={() => run(() => commands.pauseTts())}
           >
             {t("trayPanel.menu.pause")}
             <span>
@@ -268,19 +288,25 @@ export function TrayPanel() {
   }
 
   return (
-    <div className="tp-root">
+    <div className="tp-root" data-sound={dot}>
       <div className="tb-traypop tp-panel" ref={sheet}>
         <div className="tb-tph">
           <span className="tp-logo">
             <Wordmark />
           </span>
-          <span
-            className="tb-state"
-            data-sound={speaking ? "speaking" : undefined}
-          >
+          <span className="tb-state">
             <i aria-hidden />
             {stateLabel}
           </span>
+          <button
+            type="button"
+            className="tp-hide"
+            onClick={close}
+            aria-label={t("trayPanel.hide")}
+            title={t("trayPanel.hide")}
+          >
+            <Icon name="x" />
+          </button>
         </div>
 
         <div className="tb-tpv">
@@ -297,17 +323,22 @@ export function TrayPanel() {
           </div>
           <select
             className="tb-field"
-            value={voice}
+            value={picked}
             aria-label={t("trayPanel.voice")}
-            onChange={(event) => setVoice(event.target.value)}
+            onChange={(event) => setPicked(event.target.value)}
           >
-            {voices.length === 0 ? (
-              <option value={voice}>{voice}</option>
-            ) : null}
-            {voices.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
+            {/* The stored voice may be missing from the catalog (an old model, a
+                key without that model). Keep it visible so the picker shows the
+                truth instead of silently picking someone else. */}
+            {known ? null : <option value={picked}>{voice}</option>}
+            {groups.map((group) => (
+              <optgroup key={group.id} label={modelLabel(group.id)}>
+                {group.voices.map((name) => (
+                  <option key={name} value={`${group.id}::${name}`}>
+                    {name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>
@@ -328,10 +359,7 @@ export function TrayPanel() {
         <div className="tb-tpa">
           <button
             type="button"
-            onClick={() => {
-              close();
-              void commands.speakClipboardCommand();
-            }}
+            onClick={() => run(() => commands.speakClipboardCommand())}
           >
             <b>
               <Icon name="speaker" /> {t("trayPanel.readClipboard")}
@@ -346,10 +374,7 @@ export function TrayPanel() {
           </button>
           <button
             type="button"
-            onClick={() => {
-              close();
-              void commands.showMainWindowCommand();
-            }}
+            onClick={() => run(() => commands.startDictationCommand())}
           >
             <b>
               <Icon name="microphone" /> {t("trayPanel.dictate")}

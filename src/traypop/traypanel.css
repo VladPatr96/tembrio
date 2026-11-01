@@ -17,11 +17,16 @@
 
 /* Both looks live inside a window that is only slightly larger than they are;
    the radius looks better when the sheet fills the window rather than floats. */
+/* The sheet takes its own width, not the window's: the page measures the sheet
+   and asks for a window that fits it, so a width of 100% would just echo the
+   window back and the panel would never find its real size. */
 .tp-panel {
   position: relative;
   right: auto;
   bottom: auto;
-  width: 100%;
+  width: fit-content;
+  min-width: 330px;
+  max-width: 100%;
   animation: none;
 }
 
@@ -30,8 +35,30 @@
   display: inline-flex;
 }
 
-.tp-panel .tb-state i[data-sound] {
-  background: var(--tb-sound);
+/* While the voice is being prepared the dot is not idle any more: it takes the
+   first colour of the sound gradient, without the animated gradient itself. */
+.tp-root[data-sound="preparing"] .tb-state i {
+  background: var(--tb-s1);
+}
+.tp-root[data-sound="message"] .tb-state i {
+  background: var(--tb-warn);
+}
+/* The close button: a popover needs a way out that does not depend on clicking
+   elsewhere in the system. */
+.tp-hide {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tb-ink-faint);
+  padding: 0;
+}
+.tp-hide:hover {
+  background: var(--tb-surface-2);
+  color: var(--tb-ink);
 }
 
 .tp-hint {
@@ -57,8 +84,9 @@
   position: relative;
   right: auto;
   bottom: auto;
-  width: 100%;
-  min-width: 0;
+  width: fit-content;
+  min-width: 292px;
+  max-width: 100%;
   animation: none;
 }
 

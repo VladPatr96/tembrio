@@ -28,7 +28,7 @@ test.describe("tray panel", () => {
     const panel = page.locator(".tb-traypop");
     await expect(panel).toBeVisible();
     // The logo is drawn, not written: the wordmark is an SVG.
-    await expect(panel.locator(".tb-tph svg")).toBeVisible();
+    await expect(panel.locator(".tb-tph .tb-wm")).toBeVisible();
     await expect(panel.locator(".tb-tpv")).toContainText("Achird");
     await expect(panel.locator(".tb-tps")).toContainText("1.10×");
     await expect(
@@ -41,8 +41,18 @@ test.describe("tray panel", () => {
   test("says what is sounding right now", async ({ page }) => {
     await open(page);
     await expect(page.locator(".tb-tph .tb-state")).toContainText("отдыхает");
+    // The dot's colour is driven by the same attribute the kit uses, so a state
+    // change paints the dot, not only the words next to it.
+    await expect(page.locator(".tp-root")).toHaveAttribute(
+      "data-sound",
+      "idle",
+    );
     await emit(page, "sound-state", { kind: "speaking", voice: "Achird" });
     await expect(page.locator(".tb-tph .tb-state")).toContainText("читает");
+    await expect(page.locator(".tp-root")).toHaveAttribute(
+      "data-sound",
+      "speaking",
+    );
     await emit(page, "sound-state", {
       kind: "speaking",
       voice: "Achird",
@@ -72,13 +82,24 @@ test.describe("tray panel", () => {
     expect(calls).toContain("change_tts_voice_setting");
   });
 
+  test("the close button hides the panel", async ({ page }) => {
+    await open(page);
+    await page.getByRole("button", { name: "Скрыть" }).click();
+    const calls = await page.evaluate(() =>
+      window.__TEMBRIO_MOCK__.calls.map((call) => call.cmd),
+    );
+    expect(calls).toContain("hide_tray_panel");
+  });
+
   test("Escape closes the panel", async ({ page }) => {
     await open(page);
     await page.keyboard.press("Escape");
-    const last = await page.evaluate(
-      () => window.__TEMBRIO_MOCK__.calls.at(-1)?.cmd,
+    // The page may also ask for a new size on the way out, so look for the call
+    // rather than for the last one.
+    const calls = await page.evaluate(() =>
+      window.__TEMBRIO_MOCK__.calls.map((call) => call.cmd),
     );
-    expect(last).toBe("hide_tray_panel");
+    expect(calls).toContain("hide_tray_panel");
   });
 
   test("the short menu lists the four commands and the voice", async ({
