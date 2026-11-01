@@ -26,6 +26,11 @@
   bottom: auto;
   width: fit-content;
   min-width: 330px;
+  /* The card is a flex item of the full-window root, and a flex item shrinks by
+     default: it was being squeezed to the window's width while its content kept
+     its own, so the fields hung past the card's right edge. It has to be able to
+     be wider than the window — that is how it reports the size it needs. */
+  flex: 0 0 auto;
   animation: none;
 }
 
@@ -78,8 +83,13 @@
 }
 .tp-pick .tp-kind button {
   flex: 1;
+  min-width: 0;
   padding: 5px 8px;
   font-size: 12px;
+  /* A translation can make one half of the switch longer than the card; it
+     truncates instead of pushing the switch past the card's edge. */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tp-pick .tp-kind button[aria-pressed="true"] {
   background: var(--tb-surface);
@@ -139,6 +149,7 @@
   bottom: auto;
   width: fit-content;
   min-width: 292px;
+  flex: 0 0 auto;
   animation: none;
 }
 
