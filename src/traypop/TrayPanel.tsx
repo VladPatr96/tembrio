@@ -130,6 +130,33 @@ function modelLabel(model?: string): string {
   return tail.replace(/-tts$/, "").replace(/:free$/, "");
 }
 
+/** `google/gemini-3.8-flash-tts` → «google», the provider a model comes from. */
+function providerOf(modelId: string): string {
+  const slash = modelId.indexOf("/");
+  return slash > 0 ? modelId.slice(0, slash) : modelId;
+}
+
+/** A provider id as people read it: «openai» → «OpenAI», «heygen» → «HeyGen». */
+const PROVIDER_NAMES: Record<string, string> = {
+  google: "Google",
+  openai: "OpenAI",
+  heygen: "HeyGen",
+  hexgrad: "Kokoro",
+  "seed-audio": "Seed",
+  minimax: "MiniMax",
+  elevenlabs: "ElevenLabs",
+  assemblyai: "AssemblyAI",
+  mistralai: "Mistral",
+  "meta-llama": "Meta",
+  sesame: "Sesame",
+  cartesia: "Cartesia",
+  deepgram: "Deepgram",
+  azure: "Azure",
+};
+function providerName(id: string): string {
+  return PROVIDER_NAMES[id] ?? id;
+}
+
 export function TrayPanel() {
   const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>("panel");
@@ -175,21 +202,55 @@ export function TrayPanel() {
       ? t("trayPanel.state.preparing")
       : t("trayPanel.state.idle");
 
-  // A pick is a model *and* a voice: choosing «meredith» means switching to the
-  // model that has her, or the request fails on the current one.
-  const picked = `${settings?.tts_model ?? ""}::${voice}`;
-  const known = groups.some((group) => group.id === settings?.tts_model);
-  const setPicked = useCallback(
-    (next: string) => {
-      const [model, name] = next.split("::");
-      if (!model || !name) return;
-      if (model === settings?.tts_model) {
-        void commands.changeTtsVoiceSetting(name);
-        return;
-      }
-      void commands.changeTtsModelSetting(model, name);
+  // Three levels: where it runs (cloud for now), which provider, which model,
+  // and then the voice. A voice belongs to a model, so the levels above decide
+  // what the ones below may offer.
+  const [kind, setKind] = useState<"cloud" | "local">("cloud");
+  const [provider, setProvider] = useState("");
+  const providers = useMemo(
+    () => [...new Set(groups.map((group) => providerOf(group.id)))].sort(),
+    [groups],
+  );
+  const modelsOfProvider = useMemo(
+    () => groups.filter((group) => providerOf(group.id) === provider),
+    [groups, provider],
+  );
+  const voicesOfModel = useMemo(
+    () =>
+      groups.find((group) => group.id === settings?.tts_model)?.voices ?? [],
+    [groups, settings?.tts_model],
+  );
+  const knownVoice = voicesOfModel.includes(voice);
+
+  // Follow the saved model, so a change made in the settings window moves the
+  // pickers here too.
+  useEffect(() => {
+    const saved = providerOf(settings?.tts_model ?? "");
+    setProvider((current) =>
+      providers.length === 0 || providers.includes(current)
+        ? current || saved
+        : saved,
+    );
+  }, [providers, settings?.tts_model]);
+
+  /** Switch model *and* voice together: a lone voice name means nothing to
+   * another model and the request comes back as a 400. */
+  const pickModel = useCallback(
+    (modelId: string) => {
+      const first = groups.find((group) => group.id === modelId)?.voices[0];
+      if (first) void commands.changeTtsModelSetting(modelId, first);
     },
-    [settings?.tts_model],
+    [groups],
+  );
+
+  const pickProvider = useCallback(
+    (id: string) => {
+      setProvider(id);
+      const group = groups.find((each) => providerOf(each.id) === id);
+      const first = group?.voices[0];
+      if (group && first) void commands.changeTtsModelSetting(group.id, first);
+    },
+    [groups],
   );
 
   // Spent today is filled by the costs stage; until then the panel says «$0.00»
@@ -318,29 +379,91 @@ export function TrayPanel() {
           <div>
             <b>{voice || t("trayPanel.noVoice")}</b>
             <small title={settings?.tts_model ?? ""}>
+              {providerName(providerOf(settings?.tts_model ?? ""))} ·{" "}
               {modelLabel(settings?.tts_model)}
             </small>
           </div>
-          <select
-            className="tb-field"
-            value={picked}
-            aria-label={t("trayPanel.voice")}
-            onChange={(event) => setPicked(event.target.value)}
+        </div>
+
+        {/* Three levels, narrow to wide: where it runs, who makes it, which
+            voice. A voice belongs to a model and a model to a provider, so the
+            pickers only offer what the level above allows. */}
+        <div className="tp-pick">
+          <div
+            className="tb-seg tp-kind"
+            role="group"
+            aria-label={t("trayPanel.kind")}
           >
-            {/* The stored voice may be missing from the catalog (an old model, a
-                key without that model). Keep it visible so the picker shows the
-                truth instead of silently picking someone else. */}
-            {known ? null : <option value={picked}>{voice}</option>}
-            {groups.map((group) => (
-              <optgroup key={group.id} label={modelLabel(group.id)}>
-                {group.voices.map((name) => (
-                  <option key={name} value={`${group.id}::${name}`}>
-                    {name}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+            <button
+              type="button"
+              aria-pressed={kind === "cloud"}
+              onClick={() => setKind("cloud")}
+            >
+              {t("trayPanel.cloud")}
+            </button>
+            <button
+              type="button"
+              aria-pressed={kind === "local"}
+              onClick={() => setKind("local")}
+            >
+              {t("trayPanel.local")}
+            </button>
+          </div>
+
+          {kind === "local" ? (
+            <p className="tp-empty">{t("trayPanel.noLocal")}</p>
+          ) : (
+            <>
+              <label className="tp-field">
+                <span>{t("trayPanel.provider")}</span>
+                <select
+                  className="tb-field"
+                  value={provider}
+                  onChange={(event) => pickProvider(event.target.value)}
+                >
+                  {providers.map((id) => (
+                    <option key={id} value={id}>
+                      {providerName(id)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="tp-field">
+                <span>{t("trayPanel.model")}</span>
+                <select
+                  className="tb-field"
+                  value={settings?.tts_model ?? ""}
+                  onChange={(event) => pickModel(event.target.value)}
+                >
+                  {modelsOfProvider.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {modelLabel(group.id)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="tp-field">
+                <span>{t("trayPanel.voice")}</span>
+                <select
+                  className="tb-field"
+                  value={voice}
+                  onChange={(event) =>
+                    void commands.changeTtsVoiceSetting(event.target.value)
+                  }
+                >
+                  {/* The stored voice may be missing from the catalog (an old
+                    model, a key without that model). Keep it visible so the
+                    picker shows the truth instead of silently picking another. */}
+                  {knownVoice ? null : <option value={voice}>{voice}</option>}
+                  {voicesOfModel.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          )}
         </div>
 
         <div className="tb-tps">

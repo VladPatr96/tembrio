@@ -97,12 +97,9 @@
   --tb-sel: var(--tb-light-sel);
   --tb-knob-on: var(--tb-light-knob-on);
   --tb-shadow: var(--tb-light-shadow);
-  --tb-sound: linear-gradient(
-    90deg,
-    var(--tb-s1),
-    var(--tb-s2) 55%,
-    var(--tb-s3)
-  );
+  /* Violet to coral, straight through: the magenta between them read as the
+     old pink accent rather than as «this is the sound». */
+  --tb-sound: linear-gradient(90deg, var(--tb-s1), var(--tb-s3));
 }
 
 @media (prefers-color-scheme: dark) {

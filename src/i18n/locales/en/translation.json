@@ -1088,6 +1088,12 @@
       "quit": "Close the panel"
     },
     "shortNoKey": "no key",
-    "hide": "Hide"
+    "hide": "Hide",
+    "kind": "Where to read",
+    "cloud": "Cloud",
+    "local": "Local",
+    "provider": "Provider",
+    "model": "Model",
+    "noLocal": "No local voices yet — they come with the local engines."
   }
 }

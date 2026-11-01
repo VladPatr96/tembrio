@@ -75,7 +75,7 @@ test.describe("tray panel", () => {
 
   test("choosing another voice stores it", async ({ page }) => {
     await open(page);
-    await page.locator(".tb-tpv select").selectOption("Kore");
+    await page.getByLabel("Голос").selectOption("Kore");
     const calls = await page.evaluate(() =>
       window.__TEMBRIO_MOCK__.calls.map((call) => call.cmd),
     );
