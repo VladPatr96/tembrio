@@ -26,7 +26,6 @@
   bottom: auto;
   width: fit-content;
   min-width: 330px;
-  max-width: 100%;
   animation: none;
 }
 
@@ -140,7 +139,6 @@
   bottom: auto;
   width: fit-content;
   min-width: 292px;
-  max-width: 100%;
   animation: none;
 }
 

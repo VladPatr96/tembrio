@@ -11,12 +11,15 @@
      in App.css reference these, so a hex value lives in exactly one place. */
   --light-color-text: #0f0f0f;
   --light-color-background: #fbfbfb;
-  --light-color-logo-primary: #faa2ca;
+  /* The wordmark and every accent the old screens kept pink: violet, the same
+     hue the tray panel and the kit use for the sound. Coral already means
+     «recording», so the brand hue has nothing else to do. */
+  --light-color-logo-primary: #7c6cff;
   --light-color-logo-stroke: #382731;
 
   --dark-color-text: #fbfbfb;
   --dark-color-background: #2c2b29;
-  --dark-color-logo-primary: #f28cbb;
+  --dark-color-logo-primary: #9a8cff;
 
   /* Status colors. Each has a -wash tint below. */
   --light-color-warning: #d97706;

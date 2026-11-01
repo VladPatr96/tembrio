@@ -275,7 +275,15 @@ export function TrayPanel() {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
-    return () => observer.disconnect();
+    // Every open asks for the size again: the content may have grown since the
+    // last time (a longer voice name, a translation), and the window is reused.
+    const reopen = listen<Mode>("tray-panel", () =>
+      requestAnimationFrame(measure),
+    );
+    return () => {
+      observer.disconnect();
+      void reopen.then((off) => off());
+    };
   }, [mode, voice, speaking, paused]);
 
   if (mode === "menu") {
