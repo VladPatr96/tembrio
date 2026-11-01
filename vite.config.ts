@@ -12,7 +12,8 @@ const mockEntry = (): Plugin => ({
   transformIndexHtml: (html) =>
     html
       .replace("/src/main.tsx", "/src/dev/mock/entry.ts")
-      .replace("/src/overlay/main.tsx", "/src/dev/mock/overlay-entry.ts"),
+      .replace("/src/overlay/main.tsx", "/src/dev/mock/overlay-entry.ts")
+      .replace("/src/traypop/main.tsx", "/src/dev/mock/traypop-entry.ts"),
 });
 
 // https://vitejs.dev/config/

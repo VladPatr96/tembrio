@@ -1064,5 +1064,36 @@
         "text": "Here you will find today's and this month's spending, your OpenRouter balance, the Central Bank rate and warnings when a limit is close."
       }
     }
+  },
+  "trayPanel": {
+    "state": {
+      "idle": "resting",
+      "speaking": "reading",
+      "paused": "paused",
+      "preparing": "Preparing the voice"
+    },
+    "voice": "Voice",
+    "noVoice": "No voice chosen",
+    "speed": "speed",
+    "readClipboard": "Read the clipboard",
+    "dictate": "Dictation",
+    "noKeyYet": "no key yet",
+    "today": "today",
+    "menu": {
+      "open": "Open Tembrio",
+      "clipboard": "Read the clipboard",
+      "pause": "Pause",
+      "voice": "Voice:",
+      "settings": "Settings",
+      "quit": "Close the panel"
+    },
+    "shortNoKey": "no key",
+    "hide": "Hide",
+    "kind": "Where to read",
+    "cloud": "Cloud",
+    "local": "Local",
+    "provider": "Provider",
+    "model": "Model",
+    "noLocal": "No local voices yet — they come with the local engines."
   }
 }

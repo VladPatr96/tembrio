@@ -61,7 +61,7 @@ declare global {
 
 /** Commands that only change state on the Rust side answer with nothing. */
 const FIRE_AND_FORGET =
-  /^(change_|set_|update_|initialize_|show_|hide_|start_|stop_|cancel_|delete_|reset_|suspend_|resume_|add_|remove_|open_|play_|test_|register_|unregister_)/;
+  /^(change_|set_|update_|initialize_|show_|hide_|start_|stop_|cancel_|delete_|reset_|resize_|suspend_|resume_|add_|remove_|open_|play_|test_|register_|unregister_)/;
 
 export function installMockBackend(scenario: MockScenario = "returning") {
   let settings: AppSettings = {

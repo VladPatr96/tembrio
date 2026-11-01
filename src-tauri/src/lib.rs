@@ -28,6 +28,7 @@ mod system_languages;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
+mod tray_panel;
 mod tts;
 mod utils;
 
@@ -263,19 +264,29 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             .show_menu_on_left_click(false)
             .on_tray_icon_event(|tray, event| {
                 use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
-                let opens_window = matches!(
-                    event,
+                // Left click opens the panel at the icon, right click the short
+                // menu — both the same window in two looks (see tray_panel.rs).
+                let (mode, rect) = match event {
                     TrayIconEvent::Click {
                         button: MouseButton::Left,
                         button_state: MouseButtonState::Up,
+                        rect,
                         ..
-                    } | TrayIconEvent::DoubleClick {
-                        button: MouseButton::Left,
+                    } => (tray_panel::Mode::Panel, Some(rect)),
+                    TrayIconEvent::Click {
+                        button: MouseButton::Right,
+                        button_state: MouseButtonState::Up,
+                        rect,
                         ..
-                    }
-                );
-                if opens_window {
-                    show_main_window(tray.app_handle());
+                    } => (tray_panel::Mode::Menu, Some(rect)),
+                    _ => return,
+                };
+                let app = tray.app_handle();
+                // A second click on the icon closes what the first one opened.
+                if tray_panel::is_visible(app) {
+                    tray_panel::hide(app);
+                } else {
+                    tray_panel::show(app, mode, rect);
                 }
             });
     }
@@ -388,8 +399,37 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 fn show_main_window_command(app: AppHandle) -> Result<(), String> {
+    tray_panel::hide(&app);
     show_main_window(&app);
     Ok(())
+}
+
+/// Closes the tray panel — the page asks for it after an action, on Escape, and
+/// when the window is told to go away from the keyboard.
+#[tauri::command]
+#[specta::specta]
+fn hide_tray_panel(app: AppHandle) {
+    tray_panel::hide(&app);
+}
+
+/// Dictation from the tray panel: a toggle, exactly like the external trigger
+/// (SIGUSR2, CLI) — the same coordinator decides whether this press starts or
+/// stops, so the panel cannot drift from the hotkey.
+#[tauri::command]
+#[specta::specta]
+fn start_dictation_command(app: AppHandle) {
+    use tauri::Manager;
+    app.state::<TranscriptionCoordinator>()
+        .send_external_input("transcribe", "tray-panel");
+}
+
+/// The tray panel measures its own sheet and asks for a window that fits it —
+/// text scaling, a longer translation or a wrapping voice name all change the
+/// size, and a fixed one cut the panel's right edge off.
+#[tauri::command]
+#[specta::specta]
+fn resize_tray_panel(app: AppHandle, width: f64, height: f64) {
+    tray_panel::resize(&app, width, height);
 }
 
 /// Convert an unexpected panic on the headless worker into a normal CLI
@@ -725,6 +765,9 @@ pub fn run(cli_args: CliArgs) {
             tts::stop_tts,
             tts::pause_tts,
             tts::speak_clipboard_command,
+            hide_tray_panel,
+            resize_tray_panel,
+            start_dictation_command,
             shortcut::change_transcribe_accelerator_setting,
             shortcut::change_transcribe_gpu_device,
             shortcut::get_available_accelerators,
