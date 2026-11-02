@@ -12,6 +12,9 @@ test.skip(
 for (const theme of ["light", "dark"] as const) {
   for (const mode of ["panel", "menu"] as const) {
     test(`${mode} · ${theme}`, async ({ page }) => {
+      // A narrow viewport first, then the size the sheet asks for: that is what
+      // Rust does with the real window, and it keeps the shot from showing a
+      // sheet clipped by a viewport that is simply too small for it.
       await page.setViewportSize(
         mode === "panel"
           ? { width: 342, height: 308 }
@@ -28,6 +31,14 @@ for (const theme of ["light", "dark"] as const) {
         mode === "panel" ? ".tb-traypop" : ".tb-traymenu",
       );
       await expect(sheet).toBeVisible();
+      const box = await sheet.boundingBox();
+      if (box) {
+        // 6 px of margin on each side, as .tp-root pads.
+        await page.setViewportSize({
+          width: Math.ceil(box.width) + 12,
+          height: Math.ceil(box.height) + 12,
+        });
+      }
       await expect(sheet).toHaveScreenshot(`traypanel-${mode}-${theme}.png`, {
         animations: "disabled",
       });
