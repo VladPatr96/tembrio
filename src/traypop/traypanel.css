@@ -1,0 +1,186 @@
+/*
+ * The tray panel window's own bits: the page is a floating sheet, so the glass
+ * and its placement in the window are here, while everything inside (rows,
+ * buttons, menu) is the design kit's own classes.
+ */
+.tp-root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 6px;
+  box-sizing: border-box;
+  font-family: var(--tb-font);
+  color: var(--tb-ink);
+}
+
+/* Both looks live inside a window that is only slightly larger than they are;
+   the radius looks better when the sheet fills the window rather than floats. */
+/* The sheet takes its own width, not the window's: the page measures the sheet
+   and asks for a window that fits it, so a width of 100% would just echo the
+   window back and the panel would never find its real size. */
+.tp-panel {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  width: fit-content;
+  min-width: 330px;
+  /* The card is a flex item of the full-window root, and a flex item shrinks by
+     default: it was being squeezed to the window's width while its content kept
+     its own, so the fields hung past the card's right edge. It has to be able to
+     be wider than the window — that is how it reports the size it needs. */
+  flex: 0 0 auto;
+  animation: none;
+}
+
+.tp-logo {
+  height: 20px;
+  display: inline-flex;
+}
+
+/* While the voice is being prepared the dot is not idle any more: it takes the
+   first colour of the sound gradient, without the animated gradient itself. */
+.tp-root[data-sound="preparing"] .tb-state i {
+  background: var(--tb-s1);
+}
+.tp-root[data-sound="message"] .tb-state i {
+  background: var(--tb-warn);
+}
+/* A native select keeps the width of its longest option, so a model called
+   `heygen-voice-1-turbo:free` pushed the field past the card and out of the
+   panel. The fields take the card's width and cut the text instead. */
+.tp-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* A level is a name and its field: unlabelled selects make three stacked boxes
+   read as one confused control. */
+.tp-field {
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.tp-field > span {
+  color: var(--tb-ink-faint);
+  font-size: 11.5px;
+}
+.tp-pick .tb-field {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+/* Two halves of one switch: which side the sound comes from. The kit's
+   segmented control keys the active half off `tb-on`; the panel marks it with
+   `aria-pressed`, which is what a screen reader reads too. */
+.tp-pick .tp-kind {
+  display: flex;
+  width: 100%;
+  margin-bottom: 2px;
+}
+.tp-pick .tp-kind button {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  font-size: 12px;
+  /* A translation can make one half of the switch longer than the card; it
+     truncates instead of pushing the switch past the card's edge. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tp-pick .tp-kind button[aria-pressed="true"] {
+  background: var(--tb-surface);
+  color: var(--tb-ink);
+}
+.tp-empty {
+  margin: 0;
+  color: var(--tb-ink-faint);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+/* The card holding the voice keeps the portrait and the name on one row; the
+   fields moved into their own block below. */
+.tb-traypop .tb-tpv .tb-field {
+  display: none;
+}
+/* The close button: a popover needs a way out that does not depend on clicking
+   elsewhere in the system. */
+.tp-hide {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tb-ink-faint);
+  padding: 0;
+}
+.tp-hide:hover {
+  background: var(--tb-surface-2);
+  color: var(--tb-ink);
+}
+
+.tp-hint {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.tp-panel .tb-tpf {
+  align-items: center;
+}
+
+.tp-today {
+  margin-left: auto;
+  color: var(--tb-ink-soft);
+}
+
+.tp-today b {
+  color: var(--tb-ink);
+}
+
+.tp-menu {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  width: fit-content;
+  min-width: 292px;
+  flex: 0 0 auto;
+  animation: none;
+}
+
+/* Keycaps sit next to each other in a menu row and need a little air. */
+.tp-menu button {
+  white-space: nowrap;
+}
+
+.tp-menu button span {
+  white-space: nowrap;
+}
+
+.tp-menu button span .tb-kbd + .tb-kbd {
+  margin-left: 3px;
+}
+
+.tp-panel .tb-tpv small {
+  display: block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tp-menu-voice {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+/* The speed row wears the same small faded label as the picker's levels. */
+.tp-panel .tb-tps > span {
+  color: var(--tb-ink-faint);
+  font-size: 11.5px;
+}

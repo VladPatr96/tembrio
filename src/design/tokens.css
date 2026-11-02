@@ -11,6 +11,8 @@
  */
 
 :root {
+  /* Native widgets (scrollbars, select popups) follow the theme too. */
+  color-scheme: light;
   --tb-light-paper: #fbf8f3;
   --tb-light-surface: #ffffff;
   --tb-light-surface-2: #f5f1ea;
@@ -68,10 +70,8 @@
     system-ui, sans-serif;
   --tb-mono: "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
 
-  /* The pill is dark in both themes: it floats over any app. */
-  --tb-pill: #15131c;
-  --tb-pill-ink: #f2eee7;
-  --tb-pill-ink-faint: #a9a3b5;
+  /* The pill wears the app's own colours (paper and ink), so it changes with
+     the theme like everything else; the sound gradient stays its only colour. */
 
   --tb-paper: var(--tb-light-paper);
   --tb-surface: var(--tb-light-surface);
@@ -97,12 +97,9 @@
   --tb-sel: var(--tb-light-sel);
   --tb-knob-on: var(--tb-light-knob-on);
   --tb-shadow: var(--tb-light-shadow);
-  --tb-sound: linear-gradient(
-    90deg,
-    var(--tb-s1),
-    var(--tb-s2) 55%,
-    var(--tb-s3)
-  );
+  /* Violet to coral, straight through: the magenta between them read as the
+     old pink accent rather than as «this is the sound». */
+  --tb-sound: linear-gradient(90deg, var(--tb-s1), var(--tb-s3));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -135,6 +132,7 @@
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --tb-paper: var(--tb-dark-paper);
   --tb-surface: var(--tb-dark-surface);
   --tb-surface-2: var(--tb-dark-surface-2);

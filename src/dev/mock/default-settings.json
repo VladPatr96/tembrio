@@ -1,6 +1,20 @@
 {
   "settings_schema_version": 2,
   "bindings": {
+    "transcribe_with_post_process": {
+      "id": "transcribe_with_post_process",
+      "name": "Transcribe with Post-Processing",
+      "description": "Converts your speech into text and applies AI post-processing.",
+      "default_binding": "ctrl+shift+space",
+      "current_binding": "ctrl+shift+space"
+    },
+    "transcribe": {
+      "id": "transcribe",
+      "name": "Transcribe",
+      "description": "Converts your speech into text.",
+      "default_binding": "ctrl+space",
+      "current_binding": "ctrl+space"
+    },
     "speak_selection": {
       "id": "speak_selection",
       "name": "Speak Selection",
@@ -15,19 +29,12 @@
       "default_binding": "escape",
       "current_binding": "escape"
     },
-    "transcribe": {
-      "id": "transcribe",
-      "name": "Transcribe",
-      "description": "Converts your speech into text.",
-      "default_binding": "ctrl+space",
-      "current_binding": "ctrl+space"
-    },
-    "transcribe_with_post_process": {
-      "id": "transcribe_with_post_process",
-      "name": "Transcribe with Post-Processing",
-      "description": "Converts your speech into text and applies AI post-processing.",
-      "default_binding": "ctrl+shift+space",
-      "current_binding": "ctrl+shift+space"
+    "pause_speech": {
+      "id": "pause_speech",
+      "name": "Pause Speech",
+      "description": "Holds the reading; press again to continue.",
+      "default_binding": "ctrl+alt+p",
+      "current_binding": "ctrl+alt+p"
     }
   },
   "shortcut_activation": "hold_or_toggle",
@@ -141,23 +148,23 @@
     }
   ],
   "post_process_api_keys": {
-    "groq": "",
-    "bedrock_mantle": "",
-    "zai": "",
-    "openai": "",
-    "anthropic": "",
     "cerebras": "",
-    "openrouter": "",
-    "custom": ""
-  },
-  "post_process_models": {
+    "bedrock_mantle": "",
     "custom": "",
     "anthropic": "",
     "groq": "",
+    "zai": "",
+    "openai": "",
+    "openrouter": ""
+  },
+  "post_process_models": {
     "openai": "",
     "openrouter": "",
+    "groq": "",
     "zai": "",
+    "anthropic": "",
     "cerebras": "",
+    "custom": "",
     "bedrock_mantle": ""
   },
   "post_process_prompts": [

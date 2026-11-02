@@ -549,6 +549,29 @@ async pauseTts() : Promise<void> {
 async speakClipboardCommand() : Promise<void> {
     await TAURI_INVOKE("speak_clipboard_command");
 },
+/**
+ * Closes the tray panel — the page asks for it after an action, on Escape, and
+ * when the window is told to go away from the keyboard.
+ */
+async hideTrayPanel() : Promise<void> {
+    await TAURI_INVOKE("hide_tray_panel");
+},
+/**
+ * The tray panel measures its own sheet and asks for a window that fits it —
+ * text scaling, a longer translation or a wrapping voice name all change the
+ * size, and a fixed one cut the panel's right edge off.
+ */
+async resizeTrayPanel(width: number, height: number) : Promise<void> {
+    await TAURI_INVOKE("resize_tray_panel", { width, height });
+},
+/**
+ * Dictation from the tray panel: a toggle, exactly like the external trigger
+ * (SIGUSR2, CLI) — the same coordinator decides whether this press starts or
+ * stops, so the panel cannot drift from the hotkey.
+ */
+async startDictationCommand() : Promise<void> {
+    await TAURI_INVOKE("start_dictation_command");
+},
 async changeTranscribeAcceleratorSetting(accelerator: TranscribeAcceleratorSetting) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_transcribe_accelerator_setting", { accelerator }) };

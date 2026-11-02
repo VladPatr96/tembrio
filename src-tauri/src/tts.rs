@@ -18,7 +18,7 @@ use std::fmt;
 use std::num::NonZero;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::sound_state;
@@ -383,9 +383,16 @@ pub fn change_tts_model_setting(
     voice: String,
 ) -> Result<(), String> {
     let mut settings = get_settings(&app);
-    settings.tts_model = model;
-    settings.tts_voice = voice;
+    settings.tts_model = model.clone();
+    settings.tts_voice = voice.clone();
     write_settings(&app, settings);
+    // Every window shows the model and its voice (the settings screen and the
+    // tray panel), so they all have to hear about the change; without this the
+    // picker snapped back to the old voice.
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({ "setting": "tts_model", "model": model, "voice": voice }),
+    );
     Ok(())
 }
 
@@ -393,8 +400,15 @@ pub fn change_tts_model_setting(
 #[specta::specta]
 pub fn change_tts_voice_setting(app: AppHandle, voice: String) -> Result<(), String> {
     let mut settings = get_settings(&app);
-    settings.tts_voice = voice;
+    settings.tts_voice = voice.clone();
     write_settings(&app, settings);
+    // See `change_tts_model_setting`: the tray panel and the settings screen both
+    // read the voice from settings, and a silent write left them showing the old
+    // one.
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({ "setting": "tts_voice", "voice": voice }),
+    );
     Ok(())
 }
 

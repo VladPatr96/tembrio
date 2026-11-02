@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
 
 /*
- * Baselines of the speech pill in its five looks: preparing, speaking, paused,
- * and two messages. The pill is dark on any theme, so one set is enough.
+ * Baselines of the speech pill in its five looks — preparing, speaking, paused
+ * and two messages — in both themes: the pill wears the app's own colours, so
+ * each theme has its own picture.
  */
 test.skip(
   process.platform !== "linux",
@@ -57,26 +58,31 @@ const STATES = [
   },
 ];
 
-for (const state of STATES) {
-  test(state.name, async ({ page }) => {
-    await page.goto("/src/overlay/index.html");
-    // Events sent before the overlay subscribes are lost, so wait for it.
-    await page.waitForFunction(
-      () =>
-        (window as { __overlayListenersReady?: boolean })
-          .__overlayListenersReady === true,
-    );
-    await page.evaluate(
-      ([state, payload]) => {
-        window.__TEMBRIO_MOCK__?.emit("show-overlay", state);
-        return window.__TEMBRIO_MOCK__?.emit("sound-state", payload as object);
-      },
-      [state.show, state.payload] as unknown as [string, object],
-    );
-    await expect(page.locator(".tb-pill")).toBeVisible();
-    await expect(page.locator(".tb-pill")).toHaveScreenshot(
-      `pill-${state.name}.png`,
-      { animations: "disabled" },
-    );
-  });
+for (const theme of ["light", "dark"] as const) {
+  for (const state of STATES) {
+    test(`${state.name} · ${theme}`, async ({ page }) => {
+      await page.goto(`/src/overlay/index.html?theme=${theme}`);
+      // Events sent before the overlay subscribes are lost, so wait for it.
+      await page.waitForFunction(
+        () =>
+          (window as { __overlayListenersReady?: boolean })
+            .__overlayListenersReady === true,
+      );
+      await page.evaluate(
+        ([state, payload]) => {
+          window.__TEMBRIO_MOCK__?.emit("show-overlay", state);
+          return window.__TEMBRIO_MOCK__?.emit(
+            "sound-state",
+            payload as object,
+          );
+        },
+        [state.show, state.payload] as unknown as [string, object],
+      );
+      await expect(page.locator(".tb-pill")).toBeVisible();
+      await expect(page.locator(".tb-pill")).toHaveScreenshot(
+        `pill-${state.name}-${theme}.png`,
+        { animations: "disabled" },
+      );
+    });
+  }
 }
